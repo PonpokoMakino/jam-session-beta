@@ -123,7 +123,7 @@ const T = {
     host:'運営', player:'参加者',
     openHost:'運営として開く', openPlayer:'参加者として開く', pickRole:'どちらで使いますか？',
     scanToJoin:'スマホでスキャンして参加', printPop:'印刷用POPを出す（PDF）',
-    settings:'セッション設定', tiebreak:'同点のときの優先', ts_soon:'もうすぐ帰る人を先に',
+    settings:'セッション設定', sessionInfo:'セッション情報', sessionName:'セッション名', venueName:'お店の名前', venuePlace:'場所', startTime:'開始時刻', tiebreak:'同点のときの優先', ts_soon:'もうすぐ帰る人を先に',
     ts_long:'最後まで居る人を優先', ts_none:'滞在時間は使わない',
     evalOn:'評価を集める', evalMode:'評価モード', em_like:'いいねだけ', em_likebad:'いいね＋バッド',
     comments:'コメント投稿', named:'記名', anon:'匿名', promptEval:'曲終わりに評価を促す',
@@ -173,7 +173,7 @@ const T = {
     host:'Host', player:'Player',
     openHost:'Open as Host', openPlayer:'Open as Player', pickRole:'How will you use it?',
     scanToJoin:'Scan to join', printPop:'Print sign (PDF)',
-    settings:'Session settings', tiebreak:'Tie-break priority', ts_soon:'Leaving soon first',
+    settings:'Session settings', sessionInfo:'Session info', sessionName:'Session name', venueName:'Venue', venuePlace:'Location', startTime:'Start time', tiebreak:'Tie-break priority', ts_soon:'Leaving soon first',
     ts_long:'Staying longest first', ts_none:"Don't use stay time",
     evalOn:'Collect ratings', evalMode:'Rating mode', em_like:'Like only', em_likebad:'Like + Down',
     comments:'Comments', named:'Named', anon:'Anonymous', promptEval:'Prompt rating after song',
@@ -223,7 +223,7 @@ const T = {
     host:'운영', player:'참가자',
     openHost:'운영으로 열기', openPlayer:'참가자로 열기', pickRole:'어떻게 사용하시겠어요?',
     scanToJoin:'스캔해서 참가', printPop:'인쇄용 POP (PDF)',
-    settings:'세션 설정', tiebreak:'동점 시 우선', ts_soon:'곧 가는 사람 먼저',
+    settings:'세션 설정', sessionInfo:'세션 정보', sessionName:'세션 이름', venueName:'가게 이름', venuePlace:'장소', startTime:'시작 시각', tiebreak:'동점 시 우선', ts_soon:'곧 가는 사람 먼저',
     ts_long:'끝까지 있는 사람 우선', ts_none:'체류시간 사용 안 함',
     evalOn:'평가 받기', evalMode:'평가 방식', em_like:'좋아요만', em_likebad:'좋아요＋별로',
     comments:'댓글', named:'실명', anon:'익명', promptEval:'곡 끝나면 평가 유도',
@@ -273,7 +273,7 @@ const T = {
     host:'运营', player:'参与者',
     openHost:'以运营打开', openPlayer:'以参与者打开', pickRole:'您想怎么使用？',
     scanToJoin:'扫码参加', printPop:'打印海报 (PDF)',
-    settings:'场次设置', tiebreak:'同分时优先', ts_soon:'快走的人优先',
+    settings:'场次设置', sessionInfo:'场次信息', sessionName:'场次名称', venueName:'店名', venuePlace:'地点', startTime:'开始时间', tiebreak:'同分时优先', ts_soon:'快走的人优先',
     ts_long:'留到最后的人优先', ts_none:'不用停留时间',
     evalOn:'收集评价', evalMode:'评价方式', em_like:'仅点赞', em_likebad:'点赞＋一般',
     comments:'评论', named:'实名', anon:'匿名', promptEval:'曲终提示评价',
@@ -364,7 +364,8 @@ function seed(){
     config:{ tiebreak:'soon', evalOn:true, evalMode:'like', comments:true,
       named:false, promptEval:true, boost:0,
       songApproval:'manual', joinApproval:'manual', autoTiming:1,
-      required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null },
+      required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null,
+      sessionName:'', venueName:'', venuePlace:'', startTime:null },
     participants: ps,
     songs: songs,
     standards: DEFAULT_STANDARDS.slice(),
@@ -377,7 +378,8 @@ function load(){
     if(!Array.isArray(s.notifications)) s.notifications = [];
     s.participants.forEach(p=>{ if(!Array.isArray(p.parts)) p.parts = p.part?[p.part]:[]; }); // 旧データ移行: 単一part→parts配列
     s.config = Object.assign({ songApproval:'manual', joinApproval:'manual', autoTiming:1,
-      required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null }, s.config);
+      required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null,
+      sessionName:'', venueName:'', venuePlace:'', startTime:null }, s.config);
     return s;
   } }catch(e){}
   const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
@@ -520,6 +522,14 @@ function langSelect(){
   return `<select onchange="setLang(this.value)">` +
     Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${lang()===k?'selected':''}>${v}</option>`).join('') +
     `</select>`;
+}
+// セッション情報の1行表示（全画面共通・設定があるものだけ出す）
+function sessionInfoLine(){
+  const c = state.config; const bits = [];
+  if(c.sessionName) bits.push('🎷 ' + esc(c.sessionName));
+  if(c.venueName) bits.push('📍 ' + esc(c.venueName) + (c.venuePlace ? '（' + esc(c.venuePlace) + '）' : ''));
+  if(c.startTime || c.endTime) bits.push('🕒 ' + (c.startTime||'') + '〜' + (c.endTime||''));
+  return bits.length ? `<div class="sub">${bits.join('　')}</div>` : '';
 }
 function render(){
   const r = role();
@@ -692,6 +702,7 @@ function renderWatch(){
       <h1>📺 ${t('appName')} <span class="role-pill">${t('watcher')}</span></h1>
       <span class="spacer"></span>${langSelect()}
     </div>
+    ${sessionInfoLine()}
     <div class="card" style="text-align:center; padding:28px 16px">
       <div class="muted">${t('current')}</div>
       ${cur ? (cur.isBreak
@@ -758,6 +769,7 @@ function renderHost(){
       <h1>🎛 ${t('appName')} <span class="role-pill">${t('host')}</span></h1>
       <span class="spacer"></span>${langSelect()}
     </div>
+    ${sessionInfoLine()}
     <div class="sub">${t('premiumHint')}</div>
 
     <div class="card qrbox">
@@ -778,6 +790,14 @@ function renderHost(){
 
     <div class="card">
       <h2>⚙️ ${t('settings')}</h2>
+      <div class="field"><label>📋 ${t('sessionInfo')}</label>
+        <div class="row" style="gap:6px">
+          <input type="text" placeholder="${t('sessionName')}" value="${esc(c.sessionName||'')}" onchange="cfg('sessionName',this.value)" style="flex:1;min-width:130px">
+          <input type="text" placeholder="${t('venueName')}" value="${esc(c.venueName||'')}" onchange="cfg('venueName',this.value)" style="flex:1;min-width:110px">
+          <input type="text" placeholder="${t('venuePlace')}" value="${esc(c.venuePlace||'')}" onchange="cfg('venuePlace',this.value)" style="flex:1;min-width:110px">
+          <input type="time" title="${t('startTime')}" value="${c.startTime||''}" onchange="cfg('startTime',this.value||null)">
+        </div>
+      </div>
       <div class="field"><label>${t('presets')}</label>
         <div class="row">
           <button class="mini ${c.songApproval==='auto'&&c.joinApproval==='auto'?'primary':''}" onclick="setPreset('auto')">${t('presetAuto')}</button>
@@ -968,6 +988,7 @@ function renderJoin(){
       <h1>🎤 ${t('appName')} <span class="role-pill">${t('player')}</span></h1>
       <span class="spacer"></span>${langSelect()}
     </div>
+    ${sessionInfoLine()}
     ${noticeHtml}
     <div class="card">
       <h2>🙋 ${t('myInfo')}</h2>
