@@ -1,0 +1,15 @@
+name: supabase-keepalive
+# Supabase無料枠の7日自動休止を防ぐ：毎日1回、クラウドから軽いAPIアクセスを打つ
+on:
+  schedule:
+    - cron: '17 21 * * *'   # 毎日 06:17 JST
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ping supabase (keep project active)
+        run: |
+          curl -sf "https://zrkpgkdasbrargmxravc.supabase.co/rest/v1/jam_rooms?select=room&limit=1" \
+            -H "apikey: sb_publishable__kt5xkRyNqbGOK1uTBVREw_TlzazCMY" > /dev/null
+          echo "pinged $(date -u)"

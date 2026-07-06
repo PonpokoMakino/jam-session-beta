@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>セッション運営アプリ（プロトタイプ）</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#ffffff; --ink:#15181d; --ink2:#5b626d; --ink3:#8a909a;
+    --line:#e5e7eb; --line2:#d3d7dd;
+    --accent:#e8590c; --accent2:#2563eb;      /* 音楽=アンバー系でsaas-labと差別化 */
+    --ok-bg:#d8f3ec; --ok-fg:#0a5c4c;
+    --info-bg:#dbeafe; --info-fg:#1e40af;
+    --lo-bg:#eef0f3; --lo-fg:#4b5563;
+    --hot-bg:#ffe6d6; --hot-fg:#9a3d0a;
+    --warn-bg:#fdeecf; --warn-fg:#92560a;
+    --soft:#f0f2f5;
+    --radius:14px; --radius-s:8px;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#16181c; --card:#1e2127; --ink:#e9ebef; --ink2:#a3aab4; --ink3:#7b828d;
+      --line:#2b2f36; --line2:#3a3f47;
+      --accent:#fb923c; --accent2:#5b9bf0;
+      --ok-bg:#0e3d33; --ok-fg:#8fe3d0;
+      --info-bg:#13315f; --info-fg:#a8c9f5;
+      --lo-bg:#2b3038; --lo-fg:#c3c9d2;
+      --hot-bg:#4a2a12; --hot-fg:#f6b487;
+      --warn-bg:#43320f; --warn-fg:#f0c781;
+      --soft:#23272e;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Hiragino Kaku Gothic ProN","Noto Sans JP",Meiryo,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:900px; margin:0 auto; padding:20px 16px 72px;}
+  .topbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  h1{font-size:21px; font-weight:800; margin:0; display:flex; align-items:center; gap:8px;}
+  .role-pill{font-size:11px; padding:3px 10px; border-radius:99px; font-weight:700;
+    background:var(--hot-bg); color:var(--hot-fg);}
+  .spacer{flex:1;}
+  .sub{font-size:12.5px; color:var(--ink2); margin:2px 0 16px;}
+  select,input,button,textarea{font-family:inherit; font-size:13px; color:var(--ink);}
+  select,input[type=text],input[type=time],textarea{background:var(--card); border:1px solid var(--line2);
+    border-radius:var(--radius-s); padding:8px 10px;}
+  textarea{width:100%; resize:vertical; min-height:56px;}
+  button{cursor:pointer; border:1px solid var(--line2); background:var(--card); color:var(--ink);
+    border-radius:var(--radius-s); padding:8px 13px; transition:.12s; font-weight:600;}
+  button:hover{background:var(--soft);}
+  button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.primary:hover{filter:brightness(1.06);}
+  button.big{font-size:15px; padding:12px 18px;}
+  button.ghost{background:transparent;}
+  button.mini{font-size:11.5px; padding:5px 9px; font-weight:600;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px 16px; box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:14px;}
+  .card h2{font-size:15px; margin:0 0 10px; display:flex; align-items:center; gap:7px;}
+  .card h2 .lock{font-size:12px;}
+  .muted{color:var(--ink3); font-size:12px;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .badge{font-size:11px; border-radius:6px; padding:2px 8px; white-space:nowrap; display:inline-block;}
+  .b-core{background:var(--info-bg); color:var(--info-fg);}
+  .b-lead{background:var(--hot-bg); color:var(--hot-fg);}
+  .b-ok{background:var(--ok-bg); color:var(--ok-fg);}
+  .b-lo{background:var(--lo-bg); color:var(--lo-fg);}
+  .lock{color:var(--ink3);}
+  .field{margin-bottom:10px;}
+  .field label{display:block; font-size:12px; color:var(--ink2); margin-bottom:4px; font-weight:600;}
+  .divider{height:1px; background:var(--line); margin:12px 0;}
+  .song{border:1px solid var(--line2); border-radius:var(--radius-s); padding:12px; margin-bottom:10px; background:var(--card);}
+  .song.current{border:2px solid var(--accent); background:var(--hot-bg);}
+  .song.break{border-style:dashed; background:var(--soft); text-align:center; color:var(--ink2);}
+  .song .ttl{font-size:14.5px; font-weight:700; margin:0 0 6px;}
+  .slot{display:flex; align-items:center; gap:8px; font-size:12.5px; margin:3px 0; flex-wrap:wrap;}
+  .slot .pn{width:88px; color:var(--ink2); font-weight:600;}
+  .slot .who{font-weight:700;}
+  .slot .who.empty{color:var(--ink3); font-weight:500;}
+  .plays{font-size:10.5px; color:var(--ink3);}
+  .notice{background:var(--accent); color:#fff; border-radius:var(--radius); padding:14px 16px;
+    font-size:15px; font-weight:700; margin-bottom:14px; box-shadow:0 2px 8px rgba(232,89,12,.3);}
+  .notice small{display:block; font-weight:500; opacity:.9; font-size:12px; margin-top:2px;}
+  .plist{display:flex; flex-direction:column; gap:5px;}
+  .prow{display:flex; align-items:center; gap:8px; font-size:12.5px; padding:6px 8px; background:var(--soft); border-radius:6px;}
+  .prow .nm{font-weight:700;}
+  .prow .spacer{flex:1;}
+  .landing{max-width:460px; margin:8vh auto 0; text-align:center;}
+  .landing h1{justify-content:center; font-size:26px;}
+  .landing .card{padding:22px;}
+  .bigbtns{display:flex; flex-direction:column; gap:12px; margin-top:8px;}
+  .qrbox{text-align:center;}
+  .qrbox img{width:170px; height:170px; border-radius:12px; background:#fff; padding:8px; border:1px solid var(--line);}
+  .toggle{display:inline-flex; align-items:center; gap:6px; font-size:12.5px; margin:4px 12px 4px 0; cursor:pointer;}
+  .hint{font-size:11.5px; color:var(--ink3); margin-top:3px;}
+  .flash{position:fixed; left:50%; bottom:24px; transform:translateX(-50%); background:var(--ink); color:var(--bg);
+    padding:10px 18px; border-radius:99px; font-size:13px; font-weight:600; opacity:0; transition:.25s; pointer-events:none; z-index:50;}
+  .flash.on{opacity:.95;}
+  /* 譜面ビューア：DL/複製させない・できるだけ大きく */
+  .scorev{position:fixed; inset:0; background:#0b0c0e; z-index:100; display:flex; flex-direction:column;}
+  .scorev .bar{display:flex; align-items:center; gap:10px; padding:8px 12px; color:#cfd3d9; font-size:12.5px;}
+  .scorev .pages{flex:1; display:flex; gap:6px; padding:0 6px 8px; align-items:stretch; justify-content:center; overflow:hidden;}
+  .scorev img{flex:1; min-width:0; object-fit:contain; background:#fff; border-radius:6px;
+    -webkit-user-drag:none; user-select:none; -webkit-touch-callout:none; pointer-events:none;}
+  .scorev .dots{text-align:center; color:#8a909a; font-size:12px; padding-bottom:8px;}
+  @media (max-width:560px){ .wrap{padding:16px 12px 72px;} .slot .pn{width:74px;} }
+</style>
+</head>
+<body>
+<div id="app" class="wrap"></div>
+<div id="flash" class="flash"></div>
+
+<script>
+/* =========================================================================
+   セッション運営アプリ — プロトタイプ（フェーズA / バックエンドなし）
+   単一HTML・localStorage永続・storageイベントで同一ブラウザ別タブを擬似同期
+   ========================================================================= */
+
+/* ---------- 1. 多言語辞書（i18n） ---------- */
+const LANGS = { ja:'日本語', en:'English', ko:'한국어', zh:'中文' };
+const T = {
+  ja:{
+    appName:'セッション運営', sub:'飛び入りジャムを公平に回す',
+    host:'運営', player:'参加者',
+    openHost:'運営として開く', openPlayer:'参加者として開く', pickRole:'どちらで使いますか？',
+    scanToJoin:'スマホでスキャンして参加', printPop:'印刷用POPを出す（PDF）',
+    settings:'セッション設定', tiebreak:'同点のときの優先', ts_soon:'もうすぐ帰る人を先に',
+    ts_long:'最後まで居る人を優先', ts_none:'滞在時間は使わない',
+    evalOn:'評価を集める', evalMode:'評価モード', em_like:'いいねだけ', em_likebad:'いいね＋バッド',
+    comments:'コメント投稿', named:'記名', anon:'匿名', promptEval:'曲終わりに評価を促す',
+    ratingBoost:'評価が高い人を優遇（補正）', boostOff:'なし', boostMax:'強め',
+    setlist:'セットリスト', current:'演奏中', queue:'次以降', noSong:'まだ曲がありません',
+    nextSong:'次の曲へ ▶', prepNext:'次の人へ「準備して」', prepNextNext:'次の次へ「準備して」',
+    addBreak:'休憩を挟む', confirm:'メンバー確定（出演+1）', vipInsert:'VIP/ゲストを割り込み',
+    lineup:'編成', addLead:'リード追加', swap:'差し替え', requestedBy:'リクエスト',
+    participants:'参加者一覧', plays:'出演', until:'まで', remain:'残り',
+    yourName:'お名前', yourPart:'担当楽器', tillWhen:'何時まで居られる？', join:'参加する',
+    songReq:'曲をリクエスト', songTitle:'曲名', add:'追加', wantPlay:'この曲 出たい',
+    applied:'挙手ずみ', myInfo:'あなたの情報', lang:'言語',
+    like:'いいね', bad:'うーん', comment:'コメント', send:'送信', rateNow:'今の演奏へ評価を',
+    evalAsk:'演奏が終わりました！みんなの演奏に評価を', cancel:'キャンセル',
+    feedback:'改善リクエスト', feedbackPh:'こんな機能が欲しい / ここがこうだと…',
+    breakTime:'☕ 休憩', premiumHint:'🔒 は有料プランで解放される機能（プロトでは全部触れます）',
+    prepYouNext:'あなたの番です！準備して', prepYouNextNext:'次の次はあなた。準備を始めて',
+    prepFor:'の準備をお願いします', confirmed:'確定ずみ', notApplied:'まだ希望者がいません',
+    standards:'よく演る曲リスト（スタンダード）', standardsHint:'参加者はここから選んでリクエストできます', pickList:'リストから選ぶ',
+    songApproval:'曲リクエストの扱い', sa_manual:'運営の承認が必要', sa_auto:'自動で受け付ける',
+    joinApproval:'メンバーの決め方', jm_manual:'運営が選んで確定', jm_auto:'公平エンジンで自動確定',
+    autoTiming:'自動確定のタイミング', before1:'1曲前', before2:'2曲前', before3:'3曲前',
+    requiredParts:'必須パート（これが揃えば成立）', gkEither:'ギター/キーボードはどちらか一方でOK',
+    pending:'承認待ち', approve:'承認', reject:'見送り',
+    notifications:'お知らせ', unfilled:'あと必要', callFor:'📢 募集を呼びかけ', assign:'決定',
+    presets:'運営スタイル（ワンタップ切替）', presetAuto:'🤖 全自動（見てるだけ）', presetManual:'✋ 全部承認（手動）', addPart:'パート枠を追加',
+    watchMode:'📺 見学・モニター表示', standby:'まもなく開始', watcher:'見学',
+    otherPh:'「その他」の楽器名（自由記入）',
+    addDevice:'📱 端末を追加', pairHint:'このQRをもう1台（タブレット等）で読むと、同じ参加者として入れます。譜面を見るならタブレット推奨',
+    uploadScore:'🎼 譜面をアップ（画像/PDF）', takePhoto:'📷 撮ってアップ', viewScore:'🎼 譜面を見る', close:'✕ 閉じる',
+    scoreNotice:'著作権を侵害するもの（市販譜面のコピー等）はアップロードしないでください。自作・権利OKのものだけお願いします。譜面は演奏が終わると自動削除されます。',
+    scoreAutoDel:'演奏終了で自動削除・保存不可', standMode:'🎼 譜面台モード', standWait:'譜面を待っています…', tabletHint:'タブレット推奨',
+    nApply:'{who}が{part}で「{song}」に参加希望', nSongOk:'「{song}」がセットリストに入りました',
+    nSongNg:'「{song}」は今回見送りになりました', nLocked:'「{song}」のメンバーが確定しました',
+    nCall:'「{song}」の {parts} を募集中！出られる人は挙手を',
+    partNames:{drums:'ドラム',bass:'ベース',guitar:'ギター',keys:'キーボード',
+      vocal:'ボーカル',trumpet:'トランペット',trombone:'トロンボーン',
+      alto:'アルトサックス',tenor:'テナーサックス',other:'その他'},
+    popTitle:'ジャムセッション参加受付', popLead:'下のQRを読み取って参加してください',
+    popStep:'名前と楽器を入れるだけ・登録不要',
+  },
+  en:{
+    appName:'Session Host', sub:'Fair rotation for open jam sessions',
+    host:'Host', player:'Player',
+    openHost:'Open as Host', openPlayer:'Open as Player', pickRole:'How will you use it?',
+    scanToJoin:'Scan to join', printPop:'Print sign (PDF)',
+    settings:'Session settings', tiebreak:'Tie-break priority', ts_soon:'Leaving soon first',
+    ts_long:'Staying longest first', ts_none:"Don't use stay time",
+    evalOn:'Collect ratings', evalMode:'Rating mode', em_like:'Like only', em_likebad:'Like + Down',
+    comments:'Comments', named:'Named', anon:'Anonymous', promptEval:'Prompt rating after song',
+    ratingBoost:'Favor higher-rated (boost)', boostOff:'Off', boostMax:'Strong',
+    setlist:'Setlist', current:'Now playing', queue:'Up next', noSong:'No songs yet',
+    nextSong:'Next song ▶', prepNext:'Tell next: get ready', prepNextNext:'Tell after-next: get ready',
+    addBreak:'Add a break', confirm:'Confirm members (+1)', vipInsert:'Insert VIP/guest',
+    lineup:'Line-up', addLead:'Add lead', swap:'Swap', requestedBy:'by',
+    participants:'Participants', plays:'plays', until:'until', remain:'left',
+    yourName:'Your name', yourPart:'Instrument', tillWhen:'Until when can you stay?', join:'Join',
+    songReq:'Request a song', songTitle:'Song title', add:'Add', wantPlay:'I want to play this',
+    applied:'Applied', myInfo:'Your info', lang:'Language',
+    like:'Like', bad:'Meh', comment:'Comment', send:'Send', rateNow:'Rate this performance',
+    evalAsk:'Song finished! Rate the performers', cancel:'Cancel',
+    feedback:'Feature request', feedbackPh:'A feature I want / this could be better…',
+    breakTime:'☕ Break', premiumHint:'🔒 = unlocked on paid plan (all usable in this prototype)',
+    prepYouNext:"You're up! Get ready", prepYouNextNext:"You're on after next. Start prepping",
+    prepFor:'— please get ready', confirmed:'confirmed', notApplied:'No applicants yet',
+    standards:'Standards list', standardsHint:'Players can pick from here', pickList:'Pick from list',
+    songApproval:'Song requests', sa_manual:'Host approval required', sa_auto:'Auto-accept',
+    joinApproval:'Member selection', jm_manual:'Host picks & confirms', jm_auto:'Auto by fairness engine',
+    autoTiming:'Auto-lock timing', before1:'1 song ahead', before2:'2 songs ahead', before3:'3 songs ahead',
+    requiredParts:'Required parts', gkEither:'Guitar OR keys is enough',
+    pending:'Pending', approve:'Approve', reject:'Pass',
+    notifications:'Notifications', unfilled:'Still needed', callFor:'📢 Call for players', assign:'Assign',
+    presets:'Host style (one tap)', presetAuto:'🤖 Full auto', presetManual:'✋ Approve everything', addPart:'Add part slot',
+    watchMode:'📺 Watch / Monitor view', standby:'Starting soon', watcher:'Watching',
+    otherPh:'Name your "Other" instrument',
+    addDevice:'📱 Add a device', pairHint:'Scan this QR with another device (tablet recommended for scores) to join as the same player',
+    uploadScore:'🎼 Upload score (image/PDF)', takePhoto:'📷 Snap & upload', viewScore:'🎼 View score', close:'✕ Close',
+    scoreNotice:'Do not upload copyrighted material (e.g. copies of published scores). Own/licensed charts only. Scores are auto-deleted when the song ends.',
+    scoreAutoDel:'Auto-deleted after the song · no saving', standMode:'🎼 Music stand mode', standWait:'Waiting for a score…', tabletHint:'Tablet recommended',
+    nApply:'{who} wants to play {part} on "{song}"', nSongOk:'"{song}" was added to the setlist',
+    nSongNg:'"{song}" was passed this time', nLocked:'Members locked for "{song}"',
+    nCall:'"{song}" needs {parts} — raise your hand!',
+    partNames:{drums:'Drums',bass:'Bass',guitar:'Guitar',keys:'Keys',
+      vocal:'Vocal',trumpet:'Trumpet',trombone:'Trombone',
+      alto:'Alto sax',tenor:'Tenor sax',other:'Other'},
+    popTitle:'Jam Session — Sign In', popLead:'Scan the QR below to join',
+    popStep:'Just your name & instrument — no signup',
+  },
+  ko:{
+    appName:'세션 운영', sub:'즉흥 잼을 공정하게 돌리기',
+    host:'운영', player:'참가자',
+    openHost:'운영으로 열기', openPlayer:'참가자로 열기', pickRole:'어떻게 사용하시겠어요?',
+    scanToJoin:'스캔해서 참가', printPop:'인쇄용 POP (PDF)',
+    settings:'세션 설정', tiebreak:'동점 시 우선', ts_soon:'곧 가는 사람 먼저',
+    ts_long:'끝까지 있는 사람 우선', ts_none:'체류시간 사용 안 함',
+    evalOn:'평가 받기', evalMode:'평가 방식', em_like:'좋아요만', em_likebad:'좋아요＋별로',
+    comments:'댓글', named:'실명', anon:'익명', promptEval:'곡 끝나면 평가 유도',
+    ratingBoost:'평가 높은 사람 우대(보정)', boostOff:'없음', boostMax:'강하게',
+    setlist:'셋리스트', current:'연주 중', queue:'다음', noSong:'곡이 없습니다',
+    nextSong:'다음 곡 ▶', prepNext:'다음 사람에게 “준비”', prepNextNext:'다다음에게 “준비”',
+    addBreak:'휴식 넣기', confirm:'멤버 확정(출연+1)', vipInsert:'VIP/게스트 끼워넣기',
+    lineup:'편성', addLead:'리드 추가', swap:'교체', requestedBy:'요청',
+    participants:'참가자 목록', plays:'출연', until:'까지', remain:'남음',
+    yourName:'이름', yourPart:'담당 악기', tillWhen:'몇 시까지 있어요?', join:'참가하기',
+    songReq:'곡 요청', songTitle:'곡 제목', add:'추가', wantPlay:'이 곡 하고 싶어요',
+    applied:'신청함', myInfo:'내 정보', lang:'언어',
+    like:'좋아요', bad:'글쎄', comment:'댓글', send:'보내기', rateNow:'지금 연주 평가',
+    evalAsk:'연주 종료! 평가를 남겨주세요', cancel:'취소',
+    feedback:'개선 요청', feedbackPh:'원하는 기능 / 이런 점이…',
+    breakTime:'☕ 휴식', premiumHint:'🔒 = 유료 플랜에서 해제(프로토는 전부 사용 가능)',
+    prepYouNext:'당신 차례! 준비하세요', prepYouNextNext:'다다음은 당신. 준비 시작',
+    prepFor:'— 준비해 주세요', confirmed:'확정', notApplied:'아직 신청자 없음',
+    standards:'자주 하는 곡 목록', standardsHint:'참가자가 여기서 골라 요청할 수 있어요', pickList:'목록에서 선택',
+    songApproval:'곡 신청 처리', sa_manual:'운영 승인 필요', sa_auto:'자동 접수',
+    joinApproval:'멤버 결정 방식', jm_manual:'운영이 골라 확정', jm_auto:'공정 엔진 자동 확정',
+    autoTiming:'자동 확정 시점', before1:'1곡 전', before2:'2곡 전', before3:'3곡 전',
+    requiredParts:'필수 파트', gkEither:'기타/키보드 중 하나면 OK',
+    pending:'승인 대기', approve:'승인', reject:'보류',
+    notifications:'알림', unfilled:'더 필요', callFor:'📢 모집 알리기', assign:'결정',
+    presets:'운영 스타일(원탭)', presetAuto:'🤖 완전 자동', presetManual:'✋ 전부 승인(수동)', addPart:'파트 슬롯 추가',
+    watchMode:'📺 관전·모니터 표시', standby:'곧 시작', watcher:'관전',
+    otherPh:'「기타」 악기 이름(자유 기입)',
+    addDevice:'📱 기기 추가', pairHint:'이 QR을 다른 기기(악보는 태블릿 권장)로 읽으면 같은 참가자로 들어옵니다',
+    uploadScore:'🎼 악보 업로드(이미지/PDF)', takePhoto:'📷 찍어서 업로드', viewScore:'🎼 악보 보기', close:'✕ 닫기',
+    scoreNotice:'저작권을 침해하는 자료(시판 악보 복사 등)는 업로드하지 마세요. 자작/허가된 악보만. 연주가 끝나면 자동 삭제됩니다.',
+    scoreAutoDel:'연주 종료 시 자동 삭제·저장 불가', standMode:'🎼 보면대 모드', standWait:'악보를 기다리는 중…', tabletHint:'태블릿 권장',
+    nApply:'{who}님이 {part}로 「{song}」 참가 희망', nSongOk:'「{song}」이(가) 셋리스트에 들어갔어요',
+    nSongNg:'「{song}」은(는) 이번에 보류되었어요', nLocked:'「{song}」 멤버가 확정되었어요',
+    nCall:'「{song}」의 {parts} 모집 중! 가능하면 손들어 주세요',
+    partNames:{drums:'드럼',bass:'베이스',guitar:'기타',keys:'키보드',
+      vocal:'보컬',trumpet:'트럼펫',trombone:'트롬본',
+      alto:'알토 색소폰',tenor:'테너 색소폰',other:'기타'},
+    popTitle:'잼 세션 접수', popLead:'아래 QR을 찍어 참가하세요',
+    popStep:'이름과 악기만 · 가입 불필요',
+  },
+  zh:{
+    appName:'即兴运营', sub:'公平地轮换即兴合奏',
+    host:'运营', player:'参与者',
+    openHost:'以运营打开', openPlayer:'以参与者打开', pickRole:'您想怎么使用？',
+    scanToJoin:'扫码参加', printPop:'打印海报 (PDF)',
+    settings:'场次设置', tiebreak:'同分时优先', ts_soon:'快走的人优先',
+    ts_long:'留到最后的人优先', ts_none:'不用停留时间',
+    evalOn:'收集评价', evalMode:'评价方式', em_like:'仅点赞', em_likebad:'点赞＋一般',
+    comments:'评论', named:'实名', anon:'匿名', promptEval:'曲终提示评价',
+    ratingBoost:'优待高评价者（补正）', boostOff:'关', boostMax:'强',
+    setlist:'歌单', current:'演奏中', queue:'接下来', noSong:'还没有歌曲',
+    nextSong:'下一首 ▶', prepNext:'通知下一位“准备”', prepNextNext:'通知下下位“准备”',
+    addBreak:'插入休息', confirm:'确定成员（出演+1）', vipInsert:'插入VIP/嘉宾',
+    lineup:'编制', addLead:'加旋律', swap:'替换', requestedBy:'请求',
+    participants:'参与者列表', plays:'出演', until:'到', remain:'剩',
+    yourName:'姓名', yourPart:'负责乐器', tillWhen:'能待到几点？', join:'参加',
+    songReq:'点一首歌', songTitle:'歌名', add:'添加', wantPlay:'我想演这首',
+    applied:'已举手', myInfo:'你的信息', lang:'语言',
+    like:'赞', bad:'一般', comment:'评论', send:'发送', rateNow:'为这段演奏评价',
+    evalAsk:'演奏结束！请为大家评价', cancel:'取消',
+    feedback:'改进建议', feedbackPh:'想要的功能 / 这里可以…',
+    breakTime:'☕ 休息', premiumHint:'🔒 = 付费方案解锁（原型全部可用）',
+    prepYouNext:'轮到你了！请准备', prepYouNextNext:'下下首是你，开始准备',
+    prepFor:'— 请准备', confirmed:'已确定', notApplied:'暂无报名',
+    standards:'常演曲目', standardsHint:'参与者可从这里挑选点歌', pickList:'从列表选择',
+    songApproval:'点歌处理', sa_manual:'需运营批准', sa_auto:'自动受理',
+    joinApproval:'成员确定方式', jm_manual:'运营挑选确定', jm_auto:'公平引擎自动确定',
+    autoTiming:'自动确定时机', before1:'提前1首', before2:'提前2首', before3:'提前3首',
+    requiredParts:'必需乐器', gkEither:'吉他/键盘二选一即可',
+    pending:'待批准', approve:'批准', reject:'暂缓',
+    notifications:'通知', unfilled:'还缺', callFor:'📢 发起招募', assign:'确定',
+    presets:'运营风格(一键)', presetAuto:'🤖 全自动', presetManual:'✋ 全部审批(手动)', addPart:'加乐器位',
+    watchMode:'📺 观看·大屏模式', standby:'即将开始', watcher:'观看',
+    otherPh:'「其他」乐器名称（自由填写）',
+    addDevice:'📱 添加设备', pairHint:'用另一台设备（看谱推荐平板）扫此二维码，即可以同一参与者身份加入',
+    uploadScore:'🎼 上传乐谱(图片/PDF)', takePhoto:'📷 拍照上传', viewScore:'🎼 查看乐谱', close:'✕ 关闭',
+    scoreNotice:'请勿上传侵犯版权的内容（如市售乐谱的复印件）。仅限自作/已授权乐谱。演奏结束后自动删除。',
+    scoreAutoDel:'演奏结束自动删除·不可保存', standMode:'🎼 谱架模式', standWait:'等待乐谱…', tabletHint:'推荐平板',
+    nApply:'{who}想以{part}参加「{song}」', nSongOk:'「{song}」已加入歌单',
+    nSongNg:'「{song}」本次暂缓', nLocked:'「{song}」成员已确定',
+    nCall:'「{song}」招募{parts}！能上的请举手',
+    partNames:{drums:'鼓',bass:'贝斯',guitar:'吉他',keys:'键盘',
+      vocal:'主唱',trumpet:'小号',trombone:'长号',
+      alto:'中音萨克斯',tenor:'次中音萨克斯',other:'其他'},
+    popTitle:'即兴合奏 报到', popLead:'扫描下方二维码参加',
+    popStep:'只需姓名与乐器 · 无需注册',
+  },
+};
+// パートは全部同格（リード/土台の区別は廃止）。「必須パート」は運営が設定で自由に決める
+const ALL_PARTS = ['drums','bass','guitar','keys','vocal','trumpet','trombone','alto','tenor','other'];
+const DEFAULT_REQUIRED = ['drums','bass','guitar','keys'];
+// 主催者用「よく演る曲リスト」初期パッケージ（セッション定番）
+const DEFAULT_STANDARDS = [
+  'Isn\'t She Lovely','Watermelon Man','Cantaloupe Island','Chameleon','Cissy Strut',
+  'So What','Autumn Leaves','Fly Me to the Moon','Take Five','All Blues',
+  'Sunny','Just the Two of Us','I Wish','Sir Duke','Spain','Sing Sing Sing',
+];
+
+/* ---------- 2. 状態管理 ---------- */
+const KEY = 'jam_state_v1';
+const uid = () => Math.random().toString(36).slice(2, 9);
+const now = () => Date.now();
+
+function seed(){
+  // デモ用のダミーデータ（実名なし）
+  const mk = (name, parts, playsN, untilH) => ({
+    id: uid(), name, parts: Array.isArray(parts)?parts:[parts], plays: playsN, arrived: now(),
+    until: untilH, likes: 0, bads: 0,
+  });
+  const ps = [
+    mk('たろう','drums',2,'22:00'), mk('みか','bass',0,'21:00'),
+    mk('けん',['guitar','vocal'],1,'23:30'), mk('あや','keys',0,'21:30'),  // けん=複数パートのデモ
+    mk('じん','drums',0,'22:30'), mk('さき','vocal',1,'22:00'),
+    mk('ゆう','tenor',0,'23:00'),
+  ];
+  const byPart = p => ps.filter(x=>x.parts.includes(p)).map(x=>x.id);
+  const song = (title, by, lineup, apply) => ({
+    id: uid(), title, requestedBy: by, lineup, apply,
+    manual:{}, vip:[], status:'queued', confirmed:false,
+  });
+  const songs = [
+      song('Isn\'t She Lovely','けん',['drums','bass','keys','vocal'],
+        {drums:byPart('drums'), bass:byPart('bass'), keys:byPart('keys'), vocal:byPart('vocal')}),
+      song('Chameleon','みか',['drums','bass','guitar','keys','tenor'],
+        {drums:byPart('drums'), bass:byPart('bass'), guitar:byPart('guitar'), keys:byPart('keys'), tenor:byPart('tenor')}),
+  ];
+  songs[0].requesterId = ps[2].id; // けん
+  songs[1].requesterId = ps[1].id; // みか
+  return {
+    config:{ tiebreak:'soon', evalOn:true, evalMode:'like', comments:true,
+      named:false, promptEval:true, boost:0,
+      songApproval:'manual', joinApproval:'manual', autoTiming:1,
+      required: DEFAULT_REQUIRED.slice(), gkEither:false },
+    participants: ps,
+    songs: songs,
+    standards: DEFAULT_STANDARDS.slice(),
+    comments:[], feedback:[], notifications:[], prep:null, evalAsk:null, updated: now(),
+  };
+}
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.participants){
+    if(!Array.isArray(s.standards)) s.standards = DEFAULT_STANDARDS.slice(); // 旧データ移行
+    if(!Array.isArray(s.notifications)) s.notifications = [];
+    s.participants.forEach(p=>{ if(!Array.isArray(p.parts)) p.parts = p.part?[p.part]:[]; }); // 旧データ移行: 単一part→parts配列
+    s.config = Object.assign({ songApproval:'manual', joinApproval:'manual', autoTiming:1,
+      required: DEFAULT_REQUIRED.slice(), gkEither:false }, s.config);
+    return s;
+  } }catch(e){}
+  const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
+}
+let state = load();
+function save(){ state.updated = now(); localStorage.setItem(KEY, JSON.stringify(state)); schedulePush(); render(); }
+
+/* ---------- 2.5 リアルタイム同期（フェーズB-lite / Supabase） ----------
+   接続設定が無ければ完全に今まで通り（この端末内のみ＝キッチンカー営業前の仕込みモード）。
+   設定があれば jam_rooms テーブルの1行に state を丸ごと保存し、Realtimeで全端末が購読する。
+   方式は「新しい方が勝つ」(last-write-wins)。行単位の正規設計はフェーズB本番で。 */
+const SYNC_KEY = 'jam_sync';
+let sb = null, syncStatus = 'off'; // off | connecting | on | error
+function syncCfg(){ try{ const c=JSON.parse(localStorage.getItem(SYNC_KEY)); return (c&&c.url&&c.key)?c:null; }catch(e){ return null; } }
+async function syncInit(){
+  const cfg = syncCfg(); if(!cfg) return;
+  syncStatus='connecting'; render();
+  try{
+    const mod = await import('https://esm.sh/@supabase/supabase-js@2');
+    sb = mod.createClient(cfg.url, cfg.key);
+    const room = cfg.room || 'default';
+    const { data, error } = await sb.from('jam_rooms').select('state').eq('room', room).maybeSingle();
+    if(error) throw error;
+    if(data && data.state && (data.state.updated||0) > (state.updated||0)){
+      state = data.state; localStorage.setItem(KEY, JSON.stringify(state));
+    } else { await pushState(); }
+    sb.channel('jam-'+room)
+      .on('postgres_changes', {event:'*', schema:'public', table:'jam_rooms', filter:'room=eq.'+room}, payload=>{
+        const st = payload.new && payload.new.state;
+        if(st && (st.updated||0) > (state.updated||0)){
+          state = st; localStorage.setItem(KEY, JSON.stringify(state)); render();
+        }
+      })
+      .subscribe(s=>{ if(s==='SUBSCRIBED'){ syncStatus='on'; render(); } });
+  }catch(e){ console.warn('sync error:', e); sb=null; syncStatus='error'; render(); }
+}
+let pushT=null;
+function pushState(){
+  if(!sb) return Promise.resolve();
+  const cfg = syncCfg(); if(!cfg) return Promise.resolve();
+  return sb.from('jam_rooms')
+    .upsert({ room: cfg.room||'default', state: state, updated_at: new Date().toISOString() })
+    .then(r=>{ if(r.error) console.warn('push error:', r.error); });
+}
+function schedulePush(){ if(!sb) return; clearTimeout(pushT); pushT=setTimeout(pushState, 400); }
+function syncConnect(){
+  const url=(document.getElementById('sy-url').value||'').trim();
+  const key=(document.getElementById('sy-key').value||'').trim();
+  const room=(document.getElementById('sy-room').value||'').trim()||'default';
+  if(!url||!key) return;
+  localStorage.setItem(SYNC_KEY, JSON.stringify({url,key,room}));
+  syncInit();
+}
+function syncOff(){
+  localStorage.removeItem(SYNC_KEY);
+  if(sb && sb.removeAllChannels) sb.removeAllChannels();
+  sb=null; syncStatus='off'; render();
+}
+// QRのURLに ?sy=接続情報 が付いていたら取り込む（参加者はスキャンするだけで同じ部屋に入れる）
+// ?me=参加者ID が付いていたら同じ参加者として入る（端末ペアリング＝2台目のタブレット等）
+(function(){
+  const m = location.search.match(/[?&]sy=([^&]+)/);
+  if(m){ try{ const c=JSON.parse(decodeURIComponent(m[1])); if(c&&c.url&&c.key) localStorage.setItem(SYNC_KEY, JSON.stringify(c)); }catch(e){} }
+  const m2 = location.search.match(/[?&]me=([a-z0-9]+)/);
+  if(m2){ sessionStorage.setItem('jam_me', m2[1]); }
+})();
+let pairShown = false; // ペアリングQRの表示トグル（画面ローカル）
+function togglePair(){ pairShown = !pairShown; render(); }
+function pairUrl(me){ return joinUrlWithSync() + '&me=' + me.id; }
+function joinUrlWithSync(){
+  const base = location.origin + location.pathname + '?join';
+  const cfg = syncCfg();
+  return cfg ? base + '&sy=' + encodeURIComponent(JSON.stringify(cfg)) : base;
+}
+
+// 役割はURL、言語はタブごと（sessionStorage）＝参加者が各自で選べるデモ
+function role(){ const q = location.search; if(q.includes('stand')) return 'stand'; if(q.includes('watch')) return 'watch'; if(q.includes('host')) return 'host'; if(q.includes('join')) return 'join'; return 'landing'; }
+function lang(){ return sessionStorage.getItem('jam_lang') || 'ja'; }
+function setLang(l){ sessionStorage.setItem('jam_lang', l); render(); }
+function t(k){ return T[lang()][k] ?? T.ja[k] ?? k; }
+function partName(p){ return (T[lang()].partNames[p]) ?? p; }
+function myId(){ return sessionStorage.getItem('jam_me') || null; }
+function setMe(id){ sessionStorage.setItem('jam_me', id); }
+
+/* ---------- 3. 公平エンジン ---------- */
+function getP(id){ return state.participants.find(p=>p.id===id); }
+function remainMin(p){
+  // until("HH:MM") と現在時刻から残り分。プロトなので現在時刻はブラウザ時計。
+  if(!p.until) return 9999;
+  const [h,m] = p.until.split(':').map(Number);
+  const d = new Date(); const end = new Date(); end.setHours(h,m,0,0);
+  let diff = (end - d)/60000; if(diff < -60) diff += 1440; // 日跨ぎ保険
+  return Math.max(0, Math.round(diff));
+}
+function effScore(p){
+  // 主軸=出演回数。評価補正ONなら いいね で実効スコアを下げる（＝優先されやすく）
+  return p.plays - (state.config.boost * (p.likes||0));
+}
+// スロット＝編成の1枠。同じパートが複数重なってもよく、2枠目以降は 'guitar#2' のように枝番で区別
+function slotPart(slot){ return String(slot).split('#')[0]; }
+function fairCompare(a,b){
+  const sa = effScore(a), sb = effScore(b);
+  if(sa !== sb) return sa - sb;                 // 出演の少ない順
+  const tb = state.config.tiebreak;
+  if(tb === 'soon') return remainMin(a) - remainMin(b);   // 残り少ない順
+  if(tb === 'long') return remainMin(b) - remainMin(a);   // 残り多い順
+  return a.arrived - b.arrived;                 // 使わない=到着順
+}
+function suggestMap(song){
+  // 曲の全スロットの提案を一括計算。手動指名・確定済みを先に確保し、同じ人が2枠に入らないよう除外していく
+  const map={}; const taken=new Set();
+  (song.lineup||[]).forEach(sl=>{
+    const fixed = song.manual[sl] || (song.confirmed && song.members && song.members[sl]) || null;
+    if(fixed){ map[sl]=fixed; taken.add(fixed); }
+  });
+  (song.lineup||[]).forEach(sl=>{
+    if(map[sl]) return;
+    const cand=(song.apply[slotPart(sl)]||[]).map(getP).filter(Boolean).filter(p=>!taken.has(p.id));
+    if(!cand.length) return;
+    cand.sort(fairCompare);
+    map[sl]=cand[0].id; taken.add(cand[0].id);
+  });
+  return map;
+}
+function suggestFor(song, slot){
+  if(song.manual[slot]) return { id: song.manual[slot], manual:true };
+  const id = suggestMap(song)[slot];
+  return id ? { id, manual:false } : null;
+}
+
+/* ---------- 4. 描画 ---------- */
+const app = () => document.getElementById('app');
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function langSelect(){
+  return `<select onchange="setLang(this.value)">` +
+    Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${lang()===k?'selected':''}>${v}</option>`).join('') +
+    `</select>`;
+}
+function render(){
+  const r = role();
+  if(r==='landing') return renderLanding();
+  if(r==='host') return renderHost();
+  if(r==='watch') return renderWatch();
+  if(r==='stand') return renderStand();
+  return renderJoin();
+}
+
+/* ---- 譜面（フェーズD）：アップ＝著作権注意つき／閲覧のみ・DL/複製不可／演奏終了で自動削除 ---- */
+let viewerSid=null, viewerPage=0, tX=null;
+function compressImage(file){
+  // 端末写真をそのまま入れると重いので、canvasで縮小＋JPEG圧縮（帳簿=stateに入る前提のダイエット）
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      const MAX=1500, sc=Math.min(1, MAX/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      URL.revokeObjectURL(img.src);
+      res(cv.toDataURL('image/jpeg',0.72));
+    };
+    img.src=URL.createObjectURL(file);
+  });
+}
+function pickScore(sid){
+  if(!confirm(t('scoreNotice'))) return;   // 著作権の注意＝アップ前に必ず一言
+  const el=document.getElementById('scf-'+sid); if(el) el.click();
+}
+function pickShot(sid){
+  if(!confirm(t('scoreNotice'))) return;   // その場で撮ってアップ（カメラ直起動）
+  const el=document.getElementById('scc-'+sid); if(el) el.click();
+}
+let pdfReady = null;
+function loadPdfJs(){
+  // pdf.js(安定版v3・従来型)を必要なときだけ読み込む。ワーカーは取り寄せてblobから起動
+  // （別スレッドで解析させるのが肝＝壊れたPDFでも画面が凍らず、タイムアウトで切れる）
+  if(pdfReady) return pdfReady;
+  pdfReady = new Promise((res, rej)=>{
+    const sc=document.createElement('script');
+    sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    sc.onload=async()=>{
+      try{
+        const src = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js').then(r=>r.text());
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(new Blob([src], {type:'text/javascript'}));
+        res(window.pdfjsLib);
+      }catch(e){ pdfReady=null; rej(e); }
+    };
+    sc.onerror=()=>{ pdfReady=null; rej(new Error('pdf.js load failed')); };
+    document.head.appendChild(sc);
+  });
+  return pdfReady;
+}
+async function pdfToImages(file, maxPages){
+  const withTimeout = (p,ms)=>Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error('pdf timeout')),ms))]);
+  const pdfjs = await withTimeout(loadPdfJs(), 15000);
+  const buf = await file.arrayBuffer();
+  const doc = await withTimeout(pdfjs.getDocument({ data: buf }).promise, 20000);
+  const out = [];
+  const n = Math.min(doc.numPages, maxPages);
+  for(let i=1; i<=n; i++){
+    const page = await doc.getPage(i);
+    const vp0 = page.getViewport({scale:1});
+    const scale = 1500/Math.max(vp0.width, vp0.height);
+    const vp = page.getViewport({scale});
+    const cv=document.createElement('canvas'); cv.width=Math.round(vp.width); cv.height=Math.round(vp.height);
+    await page.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+    out.push(cv.toDataURL('image/jpeg',0.72));
+  }
+  return out;
+}
+async function onScoreFiles(sid, input){
+  const s=state.songs.find(x=>x.id===sid); if(!s||!input.files.length) return;
+  const files=[...input.files];
+  const pages=[];
+  try{
+    for(const f of files){
+      if(pages.length>=3) break;  // 1曲最大3ページ
+      if(f.type==='application/pdf' || /\.pdf$/i.test(f.name)){
+        pages.push(...await pdfToImages(f, 3-pages.length));
+      }else{
+        pages.push(await compressImage(f));
+      }
+    }
+  }catch(e){ console.warn('score convert error:', e); }
+  input.value='';
+  if(!pages.length) return;
+  const me=getP(myId());
+  s.score={ pages: pages.slice(0,3), up: me?me.name:'' };
+  save(); flash('🎼');
+}
+function openScore(sid){ viewerSid=sid; viewerPage=0; keepAwake(); render(); }
+function viewerOverlay(){
+  if(!viewerSid) return '';
+  const s=state.songs.find(x=>x.id===viewerSid);
+  if(!s||!s.score||!s.score.pages.length){ viewerSid=null; return ''; } // 演奏終了で自動削除→開いていた画面も閉じる
+  return scoreViewerHtml(s, false);
+}
+function closeScore(){ viewerSid=null; render(); }
+function rmScore(sid){ const s=state.songs.find(x=>x.id===sid); if(s){ delete s.score; save(); } }
+function svTS(e){ tX=e.touches[0].clientX; }
+function svTE(e){ if(tX==null) return; const dx=e.changedTouches[0].clientX-tX; tX=null; if(Math.abs(dx)>40) svNav(dx<0?1:-1); }
+function svNav(dir){
+  const s=state.songs.find(x=>x.id===viewerSid); if(!s||!s.score) return;
+  const per = (window.innerWidth>window.innerHeight)?2:1;
+  const max = Math.max(0, s.score.pages.length-per);
+  viewerPage = Math.min(max, Math.max(0, viewerPage + dir*per));
+  render();
+}
+function scoreViewerHtml(s, fullscreen){
+  // 2ページまで＝全部を一度に最大表示。3ページ以上＝スワイプ（横置き2枚ずつ/縦置き1枚ずつ）
+  const pgs=s.score.pages;
+  const landscape = window.innerWidth>window.innerHeight;
+  let shown, dots='';
+  if(pgs.length<=2){
+    shown=pgs;
+  }else{
+    const per=landscape?2:1;
+    shown=pgs.slice(viewerPage, viewerPage+per);
+    dots=`<div class="dots">${Array.from({length:Math.ceil(pgs.length/(landscape?2:1))},(_,i)=>(i===Math.floor(viewerPage/(landscape?2:1))?'●':'○')).join(' ')}　←→</div>`;
+  }
+  return `<div class="scorev" oncontextmenu="return false" ontouchstart="svTS(event)" ontouchend="svTE(event)">
+    <div class="bar"><b>🎼 ${esc(s.title)}</b><span class="spacer"></span>
+      <span>${t('scoreAutoDel')}</span>
+      ${fullscreen?'':`<button class="mini" onclick="closeScore()">${t('close')}</button>`}</div>
+    <div class="pages">${shown.map(p=>`<img src="${p}" draggable="false">`).join('')}</div>
+    ${dots}
+  </div>`;
+}
+/* 譜面台モード（設備端末/2台目タブレット）：演奏中の曲の譜面を自動でフル表示 */
+function renderStand(){
+  const cur = state.songs.find(x=>x.status==='current' && !x.isBreak);
+  if(cur && cur.score && cur.score.pages.length){
+    viewerSid = cur.id;
+    app().innerHTML = scoreViewerHtml(cur, true);
+    return;
+  }
+  app().innerHTML = `
+    <div class="landing">
+      <h1>${t('standMode')}</h1>
+      <div class="card" style="text-align:center;padding:30px">
+        ${cur?`<div style="font-size:26px;font-weight:800;margin-bottom:8px">${esc(cur.title)}</div>`:''}
+        <div class="muted" style="font-size:15px">${t('standWait')}</div>
+      </div>
+    </div>`;
+}
+
+/* ---- 見学・モニターモード（ROM専/お店の大画面用。操作なし・現状だけ映す） ---- */
+function renderWatch(){
+  const cur = state.songs.find(s=>s.status==='current');
+  const queue = state.songs.filter(s=>s.status==='queued');
+  const joinUrl = joinUrlWithSync();
+  const memberRows = (s, big) => {
+    if(!s || s.isBreak) return '';
+    const pc={}; s.lineup.forEach(sl=>{const p=slotPart(sl); pc[p]=(pc[p]||0)+1;});
+    const seen={};
+    return s.lineup.map(sl=>{
+      const part=slotPart(sl); seen[part]=(seen[part]||0)+1;
+      const sug=suggestFor(s,sl); const p=sug?getP(sug.id):null;
+      const base = pLabel(p, part);
+      const label = pc[part]>1 ? base+seen[part] : base;
+      return `<div style="font-size:${big?24:15}px;margin:2px 0"><span class="badge b-core">${label}</span> <b>${p?esc(p.name):'—'}</b></div>`;
+    }).join('') + s.vip.map(v=>`<div style="font-size:${big?24:15}px;margin:2px 0">👑 <b>${esc(v.name)}</b> (${partName(v.part)})</div>`).join('');
+  };
+  const lastCall = state.notifications.slice().reverse().find(n=>n.targets==='all');
+  app().innerHTML = `
+    <div class="topbar">
+      <h1>📺 ${t('appName')} <span class="role-pill">${t('watcher')}</span></h1>
+      <span class="spacer"></span>${langSelect()}
+    </div>
+    <div class="card" style="text-align:center; padding:28px 16px">
+      <div class="muted">${t('current')}</div>
+      ${cur ? (cur.isBreak
+        ? `<div style="font-size:38px;font-weight:800;margin-top:8px">${t('breakTime')}</div>`
+        : `<div style="font-size:36px;font-weight:800;margin:6px 0 14px">${esc(cur.title)}</div>${memberRows(cur,true)}`)
+        : `<div style="font-size:26px;font-weight:700;margin-top:8px">${t('standby')}</div>`}
+    </div>
+    ${lastCall && lastCall.key==='nCall' ? `<div class="notice">📢 ${tt(lastCall.key, lastCall.vars)}</div>` : ''}
+    ${queue.length?`<div class="card"><h2>🎵 ${t('queue')}</h2>
+      ${queue.map(s=>s.isBreak?`<div class="song break">${t('breakTime')}</div>`
+        :`<div class="song"><div class="ttl">${esc(s.title)}</div>${memberRows(s,false)}</div>`).join('')}</div>`:''}
+    <div class="card qrbox">
+      <div class="muted" style="margin-bottom:8px">${t('scanToJoin')}</div>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(joinUrl)}" alt="QR">
+    </div>
+  `;
+}
+/* ---- 画面スリープ無効化（Wake Lock）。モニター表示中は画面が勝手に消えないようにする。
+   ※https（またはlocalhost）でのみ有効。譜面表示（フェーズD）でもデフォルトONで使う予定 ---- */
+let wakeLock = null;
+async function keepAwake(){
+  if(!('wakeLock' in navigator)) return;
+  try{
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', ()=>{ wakeLock=null; });
+  }catch(e){ /* 非https・省電力設定では取得できないことがある（アプリは通常動作） */ }
+}
+document.addEventListener('visibilitychange', ()=>{
+  const r = role();
+  if(document.visibilityState==='visible' && (r==='watch'||r==='stand'||viewerSid) && !wakeLock) keepAwake();
+});
+
+function renderLanding(){
+  const joinUrl = joinUrlWithSync();
+  app().className='wrap';
+  app().innerHTML = `
+  <div class="landing">
+    <h1>🎸 ${t('appName')}</h1>
+    <div class="sub">${t('sub')}</div>
+    <div class="card">
+      <div class="field"><label>${t('lang')}</label>${langSelect()}</div>
+      <div class="bigbtns">
+        <button class="primary big" onclick="location.search='?host'">${t('openHost')}</button>
+        <button class="big" onclick="location.search='?join'">${t('openPlayer')}</button>
+        <button class="big ghost" onclick="location.search='?watch'">${t('watchMode')}</button>
+        <button class="big ghost" onclick="location.search='?stand'">${t('standMode')}（${t('tabletHint')}）</button>
+      </div>
+    </div>
+    <div class="card qrbox">
+      <div class="muted" style="margin-bottom:8px">${t('scanToJoin')}</div>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=${encodeURIComponent(joinUrl)}" alt="QR">
+    </div>
+  </div>`;
+}
+
+function renderHost(){
+  const c = state.config;
+  const joinUrl = joinUrlWithSync();
+  const cur = state.songs.find(s=>s.status==='current');
+  const queue = state.songs.filter(s=>s.status==='queued');
+  const pending = state.songs.filter(s=>s.status==='pending');
+  app().innerHTML = `
+    <div class="topbar">
+      <h1>🎛 ${t('appName')} <span class="role-pill">${t('host')}</span></h1>
+      <span class="spacer"></span>${langSelect()}
+    </div>
+    <div class="sub">${t('premiumHint')}</div>
+
+    <div class="card qrbox">
+      <div class="muted" style="margin-bottom:8px">${t('scanToJoin')}</div>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(joinUrl)}" alt="QR">
+      <div style="margin-top:10px"><button class="mini" onclick="printPop()">🖨 ${t('printPop')}</button></div>
+    </div>
+
+    <div class="card">
+      <h2>🔗 リアルタイム同期（β）</h2>
+      <div class="muted" style="margin-bottom:8px">Supabaseの接続情報を貼ると、みんなのスマホと本当に同期します（未設定ならこの端末内だけ）。QRには接続情報が自動で入ります。状態: <b>${ {off:'未接続', connecting:'接続中…', on:'✅ 同期中', error:'⚠ 接続エラー'}[syncStatus] }</b></div>
+      ${(syncStatus==='on'||syncStatus==='connecting') ? `<button class="mini" onclick="syncOff()">解除</button>` : `
+        <div class="field"><input id="sy-url" type="text" placeholder="https://xxxx.supabase.co" style="width:100%"></div>
+        <div class="field"><input id="sy-key" type="text" placeholder="anon key（公開用の入場券）" style="width:100%"></div>
+        <div class="field"><input id="sy-room" type="text" placeholder="ルーム名（空欄=default）" style="width:100%"></div>
+        <button class="mini primary" onclick="syncConnect()">接続</button>`}
+    </div>
+
+    <div class="card">
+      <h2>⚙️ ${t('settings')}</h2>
+      <div class="field"><label>${t('presets')}</label>
+        <div class="row">
+          <button class="mini ${c.songApproval==='auto'&&c.joinApproval==='auto'?'primary':''}" onclick="setPreset('auto')">${t('presetAuto')}</button>
+          <button class="mini ${c.songApproval==='manual'&&c.joinApproval==='manual'?'primary':''}" onclick="setPreset('manual')">${t('presetManual')}</button>
+        </div>
+      </div>
+      <div class="field"><label>${t('tiebreak')}</label>
+        <select onchange="cfg('tiebreak',this.value)">
+          <option value="soon" ${c.tiebreak==='soon'?'selected':''}>${t('ts_soon')}</option>
+          <option value="long" ${c.tiebreak==='long'?'selected':''}>${t('ts_long')}</option>
+          <option value="none" ${c.tiebreak==='none'?'selected':''}>${t('ts_none')}</option>
+        </select>
+      </div>
+      <div class="field"><label>${t('songApproval')}</label>
+        <select onchange="cfg('songApproval',this.value)">
+          <option value="manual" ${c.songApproval==='manual'?'selected':''}>${t('sa_manual')}</option>
+          <option value="auto" ${c.songApproval==='auto'?'selected':''}>${t('sa_auto')}</option>
+        </select>
+      </div>
+      <div class="field"><label>${t('joinApproval')}</label>
+        <select onchange="cfg('joinApproval',this.value)">
+          <option value="manual" ${c.joinApproval==='manual'?'selected':''}>${t('jm_manual')}</option>
+          <option value="auto" ${c.joinApproval==='auto'?'selected':''}>${t('jm_auto')}</option>
+        </select>
+      </div>
+      ${c.joinApproval==='auto'?`<div class="field"><label>${t('autoTiming')}</label>
+        <select onchange="cfg('autoTiming',parseInt(this.value))">
+          <option value="1" ${c.autoTiming===1?'selected':''}>${t('before1')}</option>
+          <option value="2" ${c.autoTiming===2?'selected':''}>${t('before2')}</option>
+          <option value="3" ${c.autoTiming===3?'selected':''}>${t('before3')}</option>
+        </select>
+      </div>`:''}
+      <div class="field"><label>${t('requiredParts')}</label>
+        <div class="row">${ALL_PARTS.map(p=>`<button class="mini ${c.required.includes(p)?'primary':'ghost'}" onclick="reqToggle('${p}')">${partName(p)}</button>`).join('')}</div>
+        ${c.required.includes('guitar')&&c.required.includes('keys')?`<label class="toggle" style="margin-top:6px"><input type="checkbox" ${c.gkEither?'checked':''} onchange="cfg('gkEither',this.checked)"> ${t('gkEither')}</label>`:''}
+      </div>
+      <div class="field"><label>🔒 ${t('ratingBoost')}</label>
+        <div class="row"><span class="muted">${t('boostOff')}</span>
+          <input type="range" min="0" max="1" step="0.25" value="${c.boost}" onchange="cfg('boost',parseFloat(this.value))">
+          <span class="muted">${t('boostMax')}</span><b style="font-size:12px">×${c.boost}</b></div>
+      </div>
+      <div class="divider"></div>
+      <label class="toggle"><input type="checkbox" ${c.evalOn?'checked':''} onchange="cfg('evalOn',this.checked)"> 🔒 ${t('evalOn')}</label>
+      <div class="field"><label>${t('evalMode')}</label>
+        <select onchange="cfg('evalMode',this.value)">
+          <option value="like" ${c.evalMode==='like'?'selected':''}>${t('em_like')}</option>
+          <option value="likebad" ${c.evalMode==='likebad'?'selected':''}>${t('em_likebad')}</option>
+        </select></div>
+      <label class="toggle"><input type="checkbox" ${c.comments?'checked':''} onchange="cfg('comments',this.checked)"> ${t('comments')}</label>
+      <label class="toggle"><input type="checkbox" ${c.named?'checked':''} onchange="cfg('named',this.checked)"> ${t('named')}/${t('anon')}</label>
+      <label class="toggle"><input type="checkbox" ${c.promptEval?'checked':''} onchange="cfg('promptEval',this.checked)"> ${t('promptEval')}</label>
+    </div>
+
+    <div class="card">
+      <h2>🎵 ${t('setlist')}</h2>
+      ${cur ? songCardHost(cur, true) : ''}
+      ${queue.length ? queue.map(s=>songCardHost(s,false)).join('') : (cur?'':`<div class="muted">${t('noSong')}</div>`)}
+      ${pending.length ? `<div class="muted" style="margin:10px 0 6px">⏳ ${t('pending')}</div>` +
+        pending.map(s=>`<div class="song" style="border-style:dashed">
+          <div class="ttl">${esc(s.title)} <span class="badge" style="background:var(--warn-bg);color:var(--warn-fg)">${t('pending')}</span></div>
+          <div class="muted" style="margin-bottom:6px">${t('requestedBy')}: ${esc(s.requestedBy)}</div>
+          <div class="row">
+            <button class="mini primary" onclick="approveSong('${s.id}')">✔ ${t('approve')}</button>
+            <button class="mini ghost" onclick="rejectSong('${s.id}')">${t('reject')}</button>
+          </div>
+        </div>`).join('') : ''}
+      <div class="row" style="margin-top:10px">
+        <button class="primary" onclick="nextSong()">${t('nextSong')}</button>
+        <button onclick="addBreak()">${t('addBreak')}</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🎼 ${t('standards')}</h2>
+      <div class="muted" style="margin-bottom:8px">${t('standardsHint')}</div>
+      <div class="row">
+        ${state.standards.map((title,i)=>`<span class="badge b-lo" style="padding:5px 9px">${esc(title)} <span onclick="rmStandard(${i})" style="cursor:pointer;opacity:.6">✕</span></span>`).join('')}
+      </div>
+      <div class="row" style="margin-top:10px">
+        <input type="text" id="newstd" placeholder="${t('songTitle')}" style="flex:1">
+        <button class="mini" onclick="addStandard()">＋${t('add')}</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧑‍🤝‍🧑 ${t('participants')}</h2>
+      <div class="plist">${state.participants.map(pRow).join('') || `<div class="muted">—</div>`}</div>
+    </div>
+
+    ${state.comments.length ? `<div class="card"><h2>💬 ${t('comment')}</h2>
+      ${state.comments.slice(-8).reverse().map(cm=>{
+        const song = state.songs.find(x=>x.id===cm.sid);
+        return `<div class="prow"><span>${esc(cm.text)}</span><span class="spacer"></span>
+          <span class="muted">${esc(cm.name)||t('anon')}${song?' · '+esc(song.title):''}</span></div>`;
+      }).join('')}</div>` : ''}
+
+    ${state.feedback.length ? `<div class="card"><h2>📮 ${t('feedback')}</h2>
+      ${state.feedback.slice().reverse().map(f=>`<div class="prow"><span>${esc(f.text)}</span></div>`).join('')}</div>` : ''}
+    ${viewerOverlay()}
+  `;
+}
+
+function songCardHost(s, isCurrent){
+  if(s.isBreak) return `<div class="song break">${t('breakTime')}${!isCurrent?` <button class="mini ghost" onclick="rmSong('${s.id}')">✕</button>`:''}</div>`;
+  // 同じパートが複数枠あるときは「ギター1／ギター2」のように枝番で表示
+  const partCounts = {}; s.lineup.forEach(sl=>{ const p=slotPart(sl); partCounts[p]=(partCounts[p]||0)+1; });
+  const seenIdx = {};
+  const slots = s.lineup.map(slot=>{
+    const part = slotPart(slot);
+    seenIdx[part]=(seenIdx[part]||0)+1;
+    const cls = state.config.required.includes(part)?'b-core':'b-lead';
+    const sug = suggestFor(s, slot);
+    const p = sug ? getP(sug.id) : null;
+    const base = pLabel(p, part);   // 「その他」枠は入っている人の自由記入楽器名で表示
+    const label = partCounts[part]>1 ? base+seenIdx[part] : base;
+    const who = p ? `<span class="who">${esc(p.name)}</span> <span class="plays">(${t('plays')}${p.plays}${sug.manual?' ✋':''})</span>`
+                  : `<span class="who empty">— ${t('notApplied')}</span>`;
+    const swapBtn = (s.apply[part]||[]).length>1 ? `<button class="mini ghost" onclick="cycleSwap('${s.id}','${slot}')">${t('swap')}</button>` : '';
+    const rmBtn = slot.includes('#') ? `<button class="mini ghost" onclick="rmSlot('${s.id}','${slot}')">✕</button>` : '';
+    return `<div class="slot"><span class="pn"><span class="badge ${cls}">${label}</span></span>${who}<span class="spacer"></span>${swapBtn}${rmBtn}</div>`;
+  }).join('');
+  const vip = s.vip.map((v,i)=>`<div class="slot"><span class="pn">${partName(v.part)}</span><span class="who">👑 ${esc(v.name)}</span><span class="plays">(VIP)</span><span class="spacer"></span><button class="mini ghost" onclick="rmVip('${s.id}',${i})">✕</button></div>`).join('');
+  const vipForm = vipFormSid===s.id ? `<div class="row" style="margin-top:8px">
+      <input type="text" id="vipn-${s.id}" placeholder="${t('yourName')}" style="flex:1;min-width:110px">
+      <select id="vipp-${s.id}">${ALL_PARTS.map(p=>`<option value="${p}">${partName(p)}</option>`).join('')}</select>
+      <button class="mini primary" onclick="addVip('${s.id}')">＋${t('add')}</button>
+      <button class="mini ghost" onclick="vipInsert('${s.id}')">${t('cancel')}</button>
+    </div>` : '';
+  // 必須パートの未充足：警告＋募集呼びかけ＋運営の独断アサイン
+  const miss = unfilledParts(s);
+  const missHtml = miss.length ? `<div class="row" style="margin-top:6px">
+      <span class="badge" style="background:var(--warn-bg);color:var(--warn-fg)">⚠ ${t('unfilled')}: ${miss.map(partName).join(' / ')}</span>
+      <button class="mini" onclick="callFor('${s.id}')">${t('callFor')}</button></div>` +
+    miss.map(p=>`<div class="slot"><span class="pn">${badgePart(p)}</span>
+      <select id="asg-${s.id}-${p}">${state.participants.map(pp=>`<option value="${pp.id}">${esc(pp.name)} (${pp.parts.map(pt=>pLabel(pp,pt)).join('/')})</option>`).join('')}</select>
+      <button class="mini" onclick="assignPart('${s.id}','${p}')">${t('assign')}</button></div>`).join('') : '';
+  return `<div class="song ${isCurrent?'current':''}">
+    <div class="ttl">${isCurrent?'▶ ':''}${esc(s.title)} ${s.confirmed?`<span class="badge b-ok">${t('confirmed')}</span>`:''}</div>
+    <div class="muted" style="margin-bottom:6px">${t('requestedBy')}: ${esc(s.requestedBy)}</div>
+    ${slots}${vip}${vipForm}${missHtml}
+    <div class="row" style="margin-top:8px">
+      <select id="slotp-${s.id}">${ALL_PARTS.map(p=>`<option value="${p}">${partName(p)}</option>`).join('')}</select>
+      <button class="mini" onclick="addSlot('${s.id}')">＋${t('addPart')}</button>
+      <button class="mini" onclick="vipInsert('${s.id}')">👑 ${t('vipInsert')}</button>
+      ${s.score&&s.score.pages.length?`<button class="mini" onclick="openScore('${s.id}')">🎼</button>
+        <button class="mini ghost" onclick="rmScore('${s.id}')">🎼✕</button>`:''}
+      ${isCurrent?`<button class="mini primary" onclick="confirmSong('${s.id}')">${t('confirm')}</button>
+        <button class="mini" onclick="prep('${s.id}','next')">${t('prepNext')}</button>`:''}
+      ${!isCurrent?`<button class="mini" onclick="prep('${s.id}','nextnext')">${t('prepNextNext')}</button>
+        <button class="mini ghost" onclick="rmSong('${s.id}')">✕</button>`:''}
+    </div>
+  </div>`;
+}
+function badgePart(part){
+  // 必須パート=青、それ以外=オレンジ（リード概念は廃止・色は必須/任意の区別）
+  const cls = state.config.required.includes(part)?'b-core':'b-lead';
+  return `<span class="badge ${cls}">${partName(part)}</span>`;
+}
+function pLabel(p, pt){
+  // 「その他」の人は自由記入した楽器名で表示する
+  return (pt==='other' && p && p.otherName) ? esc(p.otherName) : partName(pt);
+}
+function pRow(p){
+  return `<div class="prow"><span class="nm">${esc(p.name)}</span>
+    ${p.parts.map(pt=>`<span class="badge b-lo">${pLabel(p,pt)}</span>`).join(' ')}
+    <span class="spacer"></span>
+    <span class="muted">${t('plays')} ${p.plays} · ${t('remain')} ${remainMin(p)}m · 👍${p.likes||0}${state.config.evalMode==='likebad'?' 👎'+(p.bads||0):''}</span></div>`;
+}
+
+function renderJoin(){
+  const me = myId() && getP(myId());
+  app().className='wrap';
+  if(!me){ return renderJoinForm(); }
+  const c = state.config;
+  // 準備通知（自分が対象か）＝運営メッセージのライブ翻訳デモ
+  let noticeHtml='';
+  if(state.prep && state.prep.ids.includes(me.id)){
+    const head = state.prep.type==='next' ? t('prepYouNext') : t('prepYouNextNext');
+    noticeHtml = `<div class="notice">🔔 ${head}<small>「${esc(state.prep.song)}」${t('prepFor')}</small></div>`;
+  }
+  const cur = state.songs.find(s=>s.status==='current');
+  app().innerHTML = `
+    <div class="topbar">
+      <h1>🎤 ${t('appName')} <span class="role-pill">${t('player')}</span></h1>
+      <span class="spacer"></span>${langSelect()}
+    </div>
+    ${noticeHtml}
+    <div class="card">
+      <h2>🙋 ${t('myInfo')}</h2>
+      <div class="prow"><span class="nm">${esc(me.name)}</span>
+        ${me.parts.map(pt=>`<span class="badge b-lo">${pLabel(me,pt)}</span>`).join(' ')}<span class="spacer"></span>
+        <span class="muted">${t('plays')} ${me.plays} · ${t('remain')} ${remainMin(me)}m</span></div>
+      <div style="margin-top:8px"><button class="mini" onclick="togglePair()">${t('addDevice')}</button></div>
+      ${pairShown?`<div class="qrbox" style="margin-top:10px">
+        <div class="muted" style="margin-bottom:6px">${t('pairHint')}</div>
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pairUrl(me))}" alt="QR">
+      </div>`:''}
+    </div>
+
+    ${notifCard(me)}
+
+    ${c.evalOn && state.evalAsk ? rateCardFor(state.evalAsk.title, state.evalAsk.sid, state.evalAsk.ids, me, true) : ''}
+    ${c.evalOn && cur && !cur.isBreak ? rateCardFor(cur.title, cur.id, performersOf(cur), me, false) : ''}
+
+    <div class="card">
+      <h2>🎵 ${t('songReq')}</h2>
+      <div class="field"><input type="text" id="newsong" placeholder="${t('songTitle')}" style="width:100%"></div>
+      <button class="primary mini" onclick="addSongJoin()">＋ ${t('add')}</button>
+      ${state.standards.length ? `<div class="divider"></div>
+        <div class="muted" style="margin-bottom:6px">🎼 ${t('pickList')}</div>
+        <div class="row">${state.standards.map(title=>`<button class="mini ghost" onclick="addSongTitle('${esc(title).replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">${esc(title)}</button>`).join('')}</div>` : ''}
+      <div class="divider"></div>
+      ${state.songs.filter(s=>!s.isBreak && s.status!=='done').map(s=>songCardJoin(s, me)).join('') || `<div class="muted">${t('noSong')}</div>`}
+    </div>
+
+    <div class="card">
+      <h2>📮 ${t('feedback')}</h2>
+      <textarea id="fb" placeholder="${t('feedbackPh')}"></textarea>
+      <div style="margin-top:6px"><button class="mini" onclick="sendFeedback()">${t('send')}</button></div>
+    </div>
+    ${viewerOverlay()}
+  `;
+}
+function renderJoinForm(){
+  app().innerHTML = `
+    <div class="landing">
+      <h1>🎤 ${t('appName')}</h1>
+      <div class="sub">${t('sub')}</div>
+      <div class="card" style="text-align:left">
+        <div class="field"><label>${t('lang')}</label>${langSelect()}</div>
+        <div class="field"><label>${t('yourName')}</label><input type="text" id="jn" style="width:100%"></div>
+        <div class="field"><label>${t('yourPart')}</label>
+          <div class="row">${ALL_PARTS.map(p=>`<label class="toggle"><input type="checkbox" class="jp-part" value="${p}"> ${partName(p)}</label>`).join('')}</div>
+          <input type="text" id="jo" placeholder="${t('otherPh')}" style="width:100%;margin-top:6px"></div>
+        <div class="field"><label>${t('tillWhen')}</label><input type="time" id="ju" value="22:30"></div>
+        <button class="primary big" style="width:100%" onclick="doJoin()">${t('join')}</button>
+      </div>
+    </div>`;
+}
+function notifCard(me){
+  // 自分の関わる曲の出来事（＋全員向けの募集）だけを、見ている人の言語で表示
+  const rel = state.notifications.filter(n=>n.targets==='all' || (Array.isArray(n.targets)&&n.targets.includes(me.id))).slice(-5).reverse();
+  if(!rel.length) return '';
+  return `<div class="card"><h2>🔔 ${t('notifications')}</h2>
+    ${rel.map(n=>`<div class="prow"><span>${tt(n.key, n.vars)}</span></div>`).join('')}</div>`;
+}
+function songCardJoin(s, me){
+  // 複数パートの人は、パートごとに挙手できる（例: ギターで出る/ボーカルで出る）
+  const btns = me.parts.map(pt=>{
+    const applied = (s.apply[pt]||[]).includes(me.id);
+    return applied
+      ? `<span class="badge b-ok">✋ ${t('applied')} (${pLabel(me,pt)})</span>`
+      : `<button class="mini primary" onclick="applySong('${s.id}','${pt}')">✋ ${t('wantPlay')} (${pLabel(me,pt)})</button>`;
+  }).join(' ');
+  return `<div class="song ${s.status==='current'?'current':''}">
+    <div class="ttl">${s.status==='current'?'▶ ':''}${esc(s.title)}${s.status==='pending'?` <span class="badge" style="background:var(--warn-bg);color:var(--warn-fg)">⏳ ${t('pending')}</span>`:''}</div>
+    <div class="row" style="margin-top:4px">
+      <span class="muted">${s.lineup.map(sl=>partName(slotPart(sl))).join(' / ')}</span><span class="spacer"></span>
+      ${btns}
+    </div>
+    <div class="row" style="margin-top:6px">
+      ${s.score&&s.score.pages.length?`<button class="mini" onclick="openScore('${s.id}')">${t('viewScore')}</button>`:''}
+      <button class="mini ghost" onclick="pickScore('${s.id}')">${t('uploadScore')}</button>
+      <button class="mini ghost" onclick="pickShot('${s.id}')">${t('takePhoto')}</button>
+      <input type="file" id="scf-${s.id}" accept="image/*,application/pdf" multiple style="display:none" onchange="onScoreFiles('${s.id}',this)">
+      <input type="file" id="scc-${s.id}" accept="image/*" capture="environment" style="display:none" onchange="onScoreFiles('${s.id}',this)">
+    </div>
+  </div>`;
+}
+function rateCardFor(title, sid, ids, me, ask){
+  // ask=true は「曲終わりの評価催促」（運営が次へを押した直後に強調表示される）
+  const c = state.config;
+  const targets = ids.filter(id=>id!==me.id).map(getP).filter(Boolean);
+  if(!targets.length) return '';
+  return `<div class="card" ${ask?'style="border:2px solid var(--accent)"':''}>
+    ${ask?`<div class="notice" style="margin:0 0 10px">⭐ ${t('evalAsk')}</div>`:''}
+    <h2>⭐ ${t('rateNow')}<span class="muted" style="font-weight:400">（${esc(title)}）</span></h2>
+    ${targets.map(p=>`<div class="prow"><span class="nm">${esc(p.name)}</span>
+      <span class="badge b-lo">${p.parts.map(pt=>pLabel(p,pt)).join('/')}</span><span class="spacer"></span>
+      <button class="mini" onclick="rate('${p.id}','like')">👍 ${t('like')} ${p.likes||0}</button>
+      ${c.evalMode==='likebad'?`<button class="mini" onclick="rate('${p.id}','bad')">👎 ${t('bad')} ${p.bads||0}</button>`:''}
+    </div>`).join('')}
+    ${c.comments?`<div style="margin-top:8px"><textarea id="cmt-${sid}" placeholder="${t('comment')}${c.named?'':' ('+t('anon')+')'}"></textarea>
+      <div style="margin-top:6px"><button class="mini" onclick="addComment('${sid}')">${t('send')}</button></div></div>`:''}
+  </div>`;
+}
+function performersOf(song){
+  const ids = [];
+  song.lineup.forEach(part=>{ const s = suggestFor(song, part); if(s) ids.push(s.id); });
+  return ids;
+}
+
+/* ---------- 5. アクション ---------- */
+function cfg(k,v){ state.config[k]=v; save(); }
+function flash(msg){ const f=document.getElementById('flash'); f.textContent=msg; f.classList.add('on'); setTimeout(()=>f.classList.remove('on'),1600); }
+
+function doJoin(){
+  const name=(document.getElementById('jn').value||'').trim(); if(!name) return;
+  // 複数パート選択OK（チェックボックス）。最低1つ必要
+  const parts=[...document.querySelectorAll('.jp-part:checked')].map(el=>el.value);
+  const otherName=(document.getElementById('jo')?.value||'').trim(); // 「その他」の楽器名（自由記入）
+  if(!parts.length) return;
+  const p={ id:uid(), name, parts, plays:0,
+    arrived:now(), until:document.getElementById('ju').value, likes:0, bads:0 };
+  if(parts.includes('other') && otherName) p.otherName = otherName;
+  state.participants.push(p); setMe(p.id); save();
+}
+function addSongTitle(title){
+  title=(title||'').trim(); if(!title) return;
+  const me=getP(myId());
+  const needsApproval = state.config.songApproval==='manual'; // デフォルト=運営の承認が必要
+  state.songs.push({ id:uid(), title, requestedBy: me?me.name:'?', requesterId: me?me.id:null,
+    lineup:[...state.config.required], apply:{}, manual:{}, vip:[],
+    status: needsApproval?'pending':'queued', confirmed:false });
+  save(); flash((needsApproval?'⏳ ':'＋ ')+title);
+}
+function addSongJoin(){ const el=document.getElementById('newsong'); addSongTitle(el.value); el.value=''; }
+function addStandard(){
+  const el=document.getElementById('newstd'); const v=(el.value||'').trim(); if(!v) return;
+  if(!state.standards.includes(v)) state.standards.push(v); el.value=''; save();
+}
+function rmStandard(i){ state.standards.splice(i,1); save(); }
+function applySong(sid, part){
+  const s=state.songs.find(x=>x.id===sid); const me=getP(myId()); if(!s||!me) return;
+  part = part || me.parts[0]; if(!me.parts.includes(part)) return; // 自分の担当パートでだけ挙手できる
+  s.apply[part] = s.apply[part]||[]; if(!s.apply[part].includes(me.id)) s.apply[part].push(me.id);
+  if(!s.lineup.some(sl=>slotPart(sl)===part)) s.lineup.push(part); // どのパートも同格に参加できる（枠が無ければ作る）
+  notify(involvedIds(s).filter(id=>id!==me.id), 'nApply', {who:me.name, partKey:part, song:s.title});
+  save();
+}
+
+/* ---- 通知（自分の関わる曲の出来事だけ届く。表示は見る人の言語で翻訳） ---- */
+function tt(key, vars){
+  let s = t(key);
+  const v = Object.assign({}, vars);
+  if(v.partKey) v.part = partName(v.partKey);           // パート名は閲覧者の言語で
+  if(v.partKeys) v.parts = v.partKeys.map(partName).join(' / ');
+  Object.keys(v).forEach(k=>{ s = s.split('{'+k+'}').join(esc(v[k])); });
+  return s;
+}
+function notify(targets, key, vars){
+  state.notifications.push({ id:uid(), ts:now(), targets, key, vars });
+  if(state.notifications.length>30) state.notifications = state.notifications.slice(-30);
+}
+function involvedIds(s){
+  const ids = [].concat(...Object.values(s.apply||{}));
+  if(s.requesterId) ids.push(s.requesterId);
+  if(s.members) ids.push(...Object.values(s.members));
+  return [...new Set(ids)];
+}
+
+/* ---- 曲リクエストの承認（運営） ---- */
+function approveSong(sid){
+  const s=state.songs.find(x=>x.id===sid); if(!s||s.status!=='pending') return;
+  s.status='queued';
+  notify(s.requesterId?[s.requesterId]:[], 'nSongOk', {song:s.title});
+  save(); flash('✔ '+s.title);
+}
+function rejectSong(sid){
+  const i=state.songs.findIndex(x=>x.id===sid); if(i<0||state.songs[i].status!=='pending') return;
+  const s=state.songs[i];
+  notify(s.requesterId?[s.requesterId]:[], 'nSongNg', {song:s.title});
+  state.songs.splice(i,1); save();
+}
+
+/* ---- 必須パートの充足チェック・独断アサイン・募集呼びかけ ---- */
+function unfilledParts(s){
+  if(s.isBreak) return [];
+  const req = state.config.required;
+  const has = p => s.lineup.some(sl=>slotPart(sl)===p && suggestFor(s,sl));
+  let miss = req.filter(p=>!has(p));
+  if(state.config.gkEither && req.includes('guitar') && req.includes('keys') && (has('guitar')||has('keys')))
+    miss = miss.filter(p=>p!=='guitar' && p!=='keys');
+  return miss;
+}
+function assignPart(sid, part){
+  const s=state.songs.find(x=>x.id===sid); const sel=document.getElementById('asg-'+sid+'-'+part);
+  if(!s||!sel||!sel.value) return;
+  s.manual[part]=sel.value;                       // 運営の独断＝手動指名として最優先
+  if(!s.lineup.includes(part)) s.lineup.push(part);
+  if(s.confirmed && s.members) s.members[part]=sel.value;
+  save();
+}
+function callFor(sid){
+  const s=state.songs.find(x=>x.id===sid); if(!s) return;
+  const miss=unfilledParts(s); if(!miss.length) return;
+  notify('all','nCall',{song:s.title, partKeys:miss});
+  save(); flash('📢');
+}
+function reqToggle(p){
+  const r=state.config.required; const i=r.indexOf(p);
+  if(i>=0) r.splice(i,1); else r.push(p);
+  save();
+}
+function cycleSwap(sid, slot){
+  const s=state.songs.find(x=>x.id===sid); const ids=s.apply[slotPart(slot)]||[]; if(ids.length<2) return;
+  const curId = suggestFor(s,slot)?.id; const idx = ids.indexOf(curId);
+  s.manual[slot] = ids[(idx+1)%ids.length]; save();
+}
+function addSlot(sid){
+  // 同じパートをもう1枠増やす（Gt1/Gt2のように枝番で区別）
+  const s=state.songs.find(x=>x.id===sid); const sel=document.getElementById('slotp-'+sid);
+  if(!s||!sel||!sel.value) return;
+  const part=sel.value;
+  const n = s.lineup.filter(sl=>slotPart(sl)===part).length;
+  s.lineup.push(n===0 ? part : part+'#'+(n+1));
+  save();
+}
+function rmSlot(sid, slot){
+  const s=state.songs.find(x=>x.id===sid); if(!s) return;
+  const i=s.lineup.indexOf(slot); if(i<0) return;
+  s.lineup.splice(i,1); delete s.manual[slot]; if(s.members) delete s.members[slot];
+  save();
+}
+function setPreset(mode){
+  // 運営スタイルのワンタップ切替：auto=見てるだけで進む／manual=全部運営が承認
+  state.config.songApproval = mode; state.config.joinApproval = mode;
+  save(); flash(mode==='auto'?t('presetAuto'):t('presetManual'));
+}
+let vipFormSid = null; // VIP入力フォームを開いている曲（画面ローカル・保存しない）
+function vipInsert(sid){ vipFormSid = (vipFormSid===sid ? null : sid); render(); }
+function addVip(sid){
+  const s=state.songs.find(x=>x.id===sid); if(!s) return;
+  const name=(document.getElementById('vipn-'+sid).value||'').trim(); if(!name) return;
+  const part=document.getElementById('vipp-'+sid).value||'other';
+  s.vip.push({ name, part }); vipFormSid=null; save(); flash('👑 '+name);
+}
+function rmVip(sid, i){
+  const s=state.songs.find(x=>x.id===sid); if(!s) return;
+  s.vip.splice(i,1); save();
+}
+function snapshotMembers(s){
+  // いま提案されている顔ぶれ（手動・既存の確定・枝番スロット含む）を写真に撮って固定する
+  s.members = suggestMap(s);
+}
+function confirmSong(sid){
+  const s=state.songs.find(x=>x.id===sid); if(!s) return;
+  snapshotMembers(s); s.confirmed=true; save(); flash(t('confirmed'));
+}
+function nextSong(){
+  const cur=state.songs.find(s=>s.status==='current');
+  if(cur && !cur.isBreak){
+    // 未確定でもここで確定＝実際に演奏した人に確実に出演+1が付く
+    snapshotMembers(cur); cur.confirmed=true;
+    const perf = Object.values(cur.members);
+    perf.forEach(id=>{ const p=getP(id); if(p) p.plays++; });
+    cur.status='done';
+    delete cur.score; // 譜面は演奏終了でその場限りの自動削除（権利配慮の肝）
+    // 曲終わりの評価催促（運営オプション）：終わった曲の実メンバーへの評価を全員に促す
+    state.evalAsk = (state.config.evalOn && state.config.promptEval && perf.length)
+      ? { sid:cur.id, title:cur.title, ids:perf.slice(), ts:now() } : null;
+  }
+  else if(cur){ cur.status='done'; state.evalAsk=null; }
+  const nxt=state.songs.find(s=>s.status==='queued');
+  if(nxt){
+    nxt.status='current';
+    // ステージに上がった瞬間に顔ぶれを確定＝演奏中に評価が入っても提案がすり替わらない
+    if(!nxt.isBreak){ snapshotMembers(nxt); nxt.confirmed=true; }
+  }
+  // メンバー自動確定モード：設定した「N曲前」に来た曲を、その時点の希望状況で確定して通知
+  if(state.config.joinApproval==='auto'){
+    const q = state.songs.filter(s=>s.status==='queued' && !s.isBreak);
+    const tgt = q[state.config.autoTiming-1];
+    if(tgt && !tgt.confirmed){
+      snapshotMembers(tgt); tgt.confirmed=true;
+      notify(involvedIds(tgt),'nLocked',{song:tgt.title});
+    }
+  }
+  state.prep=null; save(); flash(t('nextSong'));
+}
+function rmSong(sid){
+  const i=state.songs.findIndex(x=>x.id===sid);
+  if(i>=0 && state.songs[i].status==='queued'){ state.songs.splice(i,1); save(); }
+}
+function addBreak(){
+  state.songs.push({ id:uid(), title:'break', isBreak:true, lineup:[], apply:{}, manual:{}, vip:[], status:'queued', confirmed:false });
+  save();
+}
+function prep(sid, type){
+  const s=state.songs.find(x=>x.id===sid);
+  state.prep={ type, ids: performersOf(s), song:s.title, ts:now() };
+  save(); flash('🔔 ' + (type==='next'?t('prepNext'):t('prepNextNext')));
+}
+function rate(pid, kind){
+  const p=getP(pid); if(!p) return;
+  if(kind==='like') p.likes=(p.likes||0)+1; else p.bads=(p.bads||0)+1;
+  save(); flash(kind==='like'?'👍':'👎');
+}
+function addComment(sid){
+  const el=document.getElementById('cmt-'+sid); if(!el) return; const text=(el.value||'').trim(); if(!text) return;
+  const me=getP(myId());
+  state.comments.push({ sid, text, name: state.config.named&&me?me.name:'', ts:now() });
+  el.value=''; save(); flash(t('send'));
+}
+function sendFeedback(){
+  const el=document.getElementById('fb'); const text=(el.value||'').trim(); if(!text) return;
+  state.feedback.push({ text, ts:now() }); el.value=''; save(); flash(t('send'));
+}
+
+/* 印刷用POP（多言語案内つき）＝ブラウザのPDF保存で出力 */
+function printPop(){
+  const joinUrl = joinUrlWithSync();
+  const langsToShow = ['ja','en','ko']; // 日本語＋主要言語を併記
+  const blocks = langsToShow.map(l=>`
+    <div style="margin:10px 0;padding:10px 14px;border-top:1px solid #ddd">
+      <div style="font-size:20px;font-weight:800">${T[l].popTitle}</div>
+      <div style="font-size:15px;margin-top:4px">${T[l].popLead}</div>
+      <div style="font-size:12px;color:#666">${T[l].popStep}</div>
+    </div>`).join('');
+  const w = window.open('', '_blank');
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>POP</title>
+    <body style="font-family:sans-serif;text-align:center;padding:30px">
+      <h1 style="font-size:26px">🎸 Jam Session</h1>
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=260x260&data=${encodeURIComponent(joinUrl)}"
+        style="width:260px;height:260px;margin:10px">
+      ${blocks}
+      <div style="margin-top:20px;color:#999;font-size:12px">${esc(joinUrl)}</div>
+      <script>setTimeout(()=>window.print(),400)<\/script>
+    </body>`);
+  w.document.close();
+}
+
+/* ---------- 6. 別タブ同期＆起動 ---------- */
+window.addEventListener('storage', (e)=>{ if(e.key===KEY){ try{ state=JSON.parse(e.newValue);}catch(_){} render(); } });
+render();
+syncInit(); // 接続設定があればSupabase同期を開始（無ければ何もしない）
+if(role()==='watch'||role()==='stand') keepAwake(); // モニター/譜面台表示中は画面が勝手に消えないように
+</script>
+</body>
+</html>
