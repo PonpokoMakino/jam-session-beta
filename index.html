@@ -136,7 +136,7 @@ const T = {
     yourName:'お名前', yourPart:'担当楽器', tillWhen:'何時まで居られる？', join:'参加する',
     stayEnd:'最後までいられる', untilEnd:'最後まで', endTime:'セッション終了時刻',
     songReq:'曲をリクエスト', songTitle:'曲名', add:'追加', wantPlay:'この曲 出たい',
-    applied:'挙手ずみ', myInfo:'あなたの情報', lang:'言語',
+    applied:'挙手ずみ', withdraw:'タップで取り下げ', unconfirm:'🔓 確定解除', myInfo:'あなたの情報', lang:'言語',
     like:'いいね', bad:'うーん', comment:'コメント', send:'送信', rateNow:'今の演奏へ評価を',
     evalAsk:'演奏が終わりました！みんなの演奏に評価を', cancel:'キャンセル',
     feedback:'改善リクエスト', feedbackPh:'こんな機能が欲しい / ここがこうだと…',
@@ -186,7 +186,7 @@ const T = {
     yourName:'Your name', yourPart:'Instrument', tillWhen:'Until when can you stay?', join:'Join',
     stayEnd:'Staying till the end', untilEnd:'till the end', endTime:'Session end time',
     songReq:'Request a song', songTitle:'Song title', add:'Add', wantPlay:'I want to play this',
-    applied:'Applied', myInfo:'Your info', lang:'Language',
+    applied:'Applied', withdraw:'tap to withdraw', unconfirm:'🔓 Unlock', myInfo:'Your info', lang:'Language',
     like:'Like', bad:'Meh', comment:'Comment', send:'Send', rateNow:'Rate this performance',
     evalAsk:'Song finished! Rate the performers', cancel:'Cancel',
     feedback:'Feature request', feedbackPh:'A feature I want / this could be better…',
@@ -236,7 +236,7 @@ const T = {
     yourName:'이름', yourPart:'담당 악기', tillWhen:'몇 시까지 있어요?', join:'참가하기',
     stayEnd:'끝까지 있을 수 있어요', untilEnd:'끝까지', endTime:'세션 종료 시각',
     songReq:'곡 요청', songTitle:'곡 제목', add:'추가', wantPlay:'이 곡 하고 싶어요',
-    applied:'신청함', myInfo:'내 정보', lang:'언어',
+    applied:'신청함', withdraw:'탭하면 취소', unconfirm:'🔓 확정 해제', myInfo:'내 정보', lang:'언어',
     like:'좋아요', bad:'글쎄', comment:'댓글', send:'보내기', rateNow:'지금 연주 평가',
     evalAsk:'연주 종료! 평가를 남겨주세요', cancel:'취소',
     feedback:'개선 요청', feedbackPh:'원하는 기능 / 이런 점이…',
@@ -286,7 +286,7 @@ const T = {
     yourName:'姓名', yourPart:'负责乐器', tillWhen:'能待到几点？', join:'参加',
     stayEnd:'能待到最后', untilEnd:'到最后', endTime:'场次结束时间',
     songReq:'点一首歌', songTitle:'歌名', add:'添加', wantPlay:'我想演这首',
-    applied:'已举手', myInfo:'你的信息', lang:'语言',
+    applied:'已举手', withdraw:'点按撤回', unconfirm:'🔓 取消确定', myInfo:'你的信息', lang:'语言',
     like:'赞', bad:'一般', comment:'评论', send:'发送', rateNow:'为这段演奏评价',
     evalAsk:'演奏结束！请为大家评价', cancel:'取消',
     feedback:'改进建议', feedbackPh:'想要的功能 / 这里可以…',
@@ -914,7 +914,7 @@ function songCardHost(s, isCurrent){
       <select id="asg-${s.id}-${p}">${state.participants.map(pp=>`<option value="${pp.id}">${esc(pp.name)} (${pp.parts.map(pt=>pLabel(pp,pt)).join('/')})</option>`).join('')}</select>
       <button class="mini" onclick="assignPart('${s.id}','${p}')">${t('assign')}</button></div>`).join('') : '';
   return `<div class="song ${isCurrent?'current':''}">
-    <div class="ttl">${isCurrent?'▶ ':''}${esc(s.title)} ${s.confirmed?`<span class="badge b-ok">${t('confirmed')}</span>`:''}</div>
+    <div class="ttl">${isCurrent?'▶ ':''}${esc(s.title)} ${s.confirmed?`<span class="badge b-ok">${t('confirmed')}</span> <button class="mini ghost" onclick="unconfirmSong('${s.id}')">${t('unconfirm')}</button>`:''}</div>
     <div class="muted" style="margin-bottom:6px">${t('requestedBy')}: ${esc(s.requestedBy)}</div>
     ${slots}${vip}${vipForm}${missHtml}
     <div class="row" style="margin-top:8px">
@@ -1029,9 +1029,11 @@ function songCardJoin(s, me){
   // 複数パートの人は、パートごとに挙手できる（例: ギターで出る/ボーカルで出る）
   const btns = me.parts.map(pt=>{
     const applied = (s.apply[pt]||[]).includes(me.id);
-    return applied
+    if(!applied) return `<button class="mini primary" onclick="applySong('${s.id}','${pt}')">✋ ${t('wantPlay')} (${pLabel(me,pt)})</button>`;
+    // 確定前なら取り下げ可能（タップで✕）。確定後はロック
+    return s.confirmed
       ? `<span class="badge b-ok">✋ ${t('applied')} (${pLabel(me,pt)})</span>`
-      : `<button class="mini primary" onclick="applySong('${s.id}','${pt}')">✋ ${t('wantPlay')} (${pLabel(me,pt)})</button>`;
+      : `<button class="mini" title="${t('withdraw')}" onclick="unapplySong('${s.id}','${pt}')">✋ ${t('applied')} (${pLabel(me,pt)}) ✕</button>`;
   }).join(' ');
   return `<div class="song ${s.status==='current'?'current':''}">
     <div class="ttl">${s.status==='current'?'▶ ':''}${esc(s.title)}${s.status==='pending'?` <span class="badge" style="background:var(--warn-bg);color:var(--warn-fg)">⏳ ${t('pending')}</span>`:''}</div>
@@ -1113,6 +1115,20 @@ function applySong(sid, part){
   notify(involvedIds(s).filter(id=>id!==me.id), 'nApply', {who:me.name, partKey:part, song:s.title});
   save();
 }
+function unapplySong(sid, part){
+  // 確定までは挙手を取り下げられる。確定後はロック（運営に相談）
+  const s=state.songs.find(x=>x.id===sid); const me=getP(myId()); if(!s||!me||s.confirmed) return;
+  const a=s.apply[part]||[]; const i=a.indexOf(me.id); if(i<0) return;
+  a.splice(i,1);
+  Object.keys(s.manual).forEach(sl=>{ if(s.manual[sl]===me.id && slotPart(sl)===part) delete s.manual[sl]; });
+  save(); flash('✕');
+}
+function unconfirmSong(sid){
+  // 運営はいつでも確定を解除して組み直せる（自動提案が生き返る）
+  const s=state.songs.find(x=>x.id===sid); if(!s) return;
+  s.confirmed=false; s.members={};
+  save(); flash('🔓');
+}
 
 /* ---- 通知（自分の関わる曲の出来事だけ届く。表示は見る人の言語で翻訳） ---- */
 function tt(key, vars){
@@ -1180,7 +1196,9 @@ function reqToggle(p){
 function cycleSwap(sid, slot){
   const s=state.songs.find(x=>x.id===sid); const ids=s.apply[slotPart(slot)]||[]; if(ids.length<2) return;
   const curId = suggestFor(s,slot)?.id; const idx = ids.indexOf(curId);
-  s.manual[slot] = ids[(idx+1)%ids.length]; save();
+  s.manual[slot] = ids[(idx+1)%ids.length];
+  if(s.confirmed && s.members) s.members[slot]=s.manual[slot]; // 確定後の差し替えもスナップショットに反映
+  save();
 }
 function addSlot(sid){
   // 同じパートをもう1枠増やす（Gt1/Gt2のように枝番で区別）
