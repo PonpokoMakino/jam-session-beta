@@ -140,6 +140,12 @@ const T = {
     like:'いいね', bad:'うーん', comment:'コメント', send:'送信', rateNow:'今の演奏へ評価を',
     evalAsk:'演奏が終わりました！みんなの演奏に評価を', cancel:'キャンセル',
     feedback:'改善リクエスト', feedbackPh:'こんな機能が欲しい / ここがこうだと…',
+    acctPromo:'🎁 無料アカウントで「今日の出演・👍・写真」がずっと残る＆次の開催通知が届く',
+    acctBtn:'Googleで続ける（1タップ・入力なし）', later:'あとで', comingSoon:'正式版で使えます（β準備中）',
+    myRecords:'📖 出演記録', upgrade:'アップグレード',
+    paywallStd:'スタンダード ¥300/月（予定）', paywallStdDesc:'☕ コーヒー1杯以下。1か月より前の記録・コメント全文・写真もずっと見られる',
+    paywallPro:'運営Pro ¥980/月（予定）', paywallProDesc:'評価機能・評価補正・複数セッション履歴・店舗ブランディング・開催通知の配信が全部解放',
+    proHint:'🔒の機能をまとめて解放：',
     breakTime:'☕ 休憩', resumeAt:'再開予定', premiumHint:'🔒 は有料プランで解放される機能（プロトでは全部触れます）',
     prepYouNext:'あなたの番です！準備して', prepYouNextNext:'次の次はあなた。準備を始めて',
     prepFor:'の準備をお願いします', confirmed:'確定ずみ', notApplied:'まだ希望者がいません',
@@ -190,6 +196,12 @@ const T = {
     like:'Like', bad:'Meh', comment:'Comment', send:'Send', rateNow:'Rate this performance',
     evalAsk:'Song finished! Rate the performers', cancel:'Cancel',
     feedback:'Feature request', feedbackPh:'A feature I want / this could be better…',
+    acctPromo:'🎁 Free account keeps today\'s plays, 👍 & photos forever + session alerts',
+    acctBtn:'Continue with Google (1 tap, no typing)', later:'Later', comingSoon:'Coming in the full release (beta)',
+    myRecords:'📖 My records', upgrade:'Upgrade',
+    paywallStd:'Standard ¥300/mo (planned)', paywallStdDesc:'☕ Less than a coffee. Unlock records older than 1 month, full comments & photos',
+    paywallPro:'Host Pro ¥980/mo (planned)', paywallProDesc:'Ratings, boost, session history, venue branding & event notifications — all unlocked',
+    proHint:'Unlock all 🔒 features:',
     breakTime:'☕ Break', resumeAt:'resume', premiumHint:'🔒 = unlocked on paid plan (all usable in this prototype)',
     prepYouNext:"You're up! Get ready", prepYouNextNext:"You're on after next. Start prepping",
     prepFor:'— please get ready', confirmed:'confirmed', notApplied:'No applicants yet',
@@ -240,6 +252,12 @@ const T = {
     like:'좋아요', bad:'글쎄', comment:'댓글', send:'보내기', rateNow:'지금 연주 평가',
     evalAsk:'연주 종료! 평가를 남겨주세요', cancel:'취소',
     feedback:'개선 요청', feedbackPh:'원하는 기능 / 이런 점이…',
+    acctPromo:'🎁 무료 계정으로 오늘의 출연·👍·사진이 계속 남고 개최 알림도 도착',
+    acctBtn:'Google로 계속(1탭·입력 없음)', later:'나중에', comingSoon:'정식판에서 사용 가능(β준비 중)',
+    myRecords:'📖 출연 기록', upgrade:'업그레이드',
+    paywallStd:'스탠다드 ¥300/월(예정)', paywallStdDesc:'☕ 커피 한 잔 이하. 1개월 이전 기록·댓글 전문·사진도 계속 열람',
+    paywallPro:'운영 Pro ¥980/월(예정)', paywallProDesc:'평가 기능·보정·세션 이력·매장 브랜딩·개최 알림 전부 해제',
+    proHint:'🔒 기능 일괄 해제:',
     breakTime:'☕ 휴식', resumeAt:'재개 예정', premiumHint:'🔒 = 유료 플랜에서 해제(프로토는 전부 사용 가능)',
     prepYouNext:'당신 차례! 준비하세요', prepYouNextNext:'다다음은 당신. 준비 시작',
     prepFor:'— 준비해 주세요', confirmed:'확정', notApplied:'아직 신청자 없음',
@@ -290,6 +308,12 @@ const T = {
     like:'赞', bad:'一般', comment:'评论', send:'发送', rateNow:'为这段演奏评价',
     evalAsk:'演奏结束！请为大家评价', cancel:'取消',
     feedback:'改进建议', feedbackPh:'想要的功能 / 这里可以…',
+    acctPromo:'🎁 免费账号可永久保留今天的出演·👍·照片，并接收开演通知',
+    acctBtn:'用Google继续（1键·无需输入）', later:'以后再说', comingSoon:'正式版开放（β筹备中）',
+    myRecords:'📖 出演记录', upgrade:'升级',
+    paywallStd:'标准版 ¥300/月（暂定）', paywallStdDesc:'☕ 不到一杯咖啡。可查看1个月前的记录·完整评论·照片',
+    paywallPro:'运营Pro ¥980/月（暂定）', paywallProDesc:'评价功能·补正·场次历史·店铺品牌·开演通知全部解锁',
+    proHint:'一键解锁所有🔒功能：',
     breakTime:'☕ 休息', resumeAt:'预计再开', premiumHint:'🔒 = 付费方案解锁（原型全部可用）',
     prepYouNext:'轮到你了！请准备', prepYouNextNext:'下下首是你，开始准备',
     prepFor:'— 请准备', confirmed:'已确定', notApplied:'暂无报名',
@@ -522,6 +546,40 @@ function langSelect(){
   return `<select onchange="setLang(this.value)">` +
     Object.entries(LANGS).map(([k,v])=>`<option value="${k}" ${lang()===k?'selected':''}>${v}</option>`).join('') +
     `</select>`;
+}
+/* ---- アカウント/課金への導線（ファネル設計§11のデモ・実課金なし） ---- */
+let paywallKind = null; // null | 'std' | 'pro'
+function openPaywall(k){ paywallKind = k; render(); }
+function closePaywall(){ paywallKind = null; render(); }
+function notYet(){ closePaywall(); flash(t('comingSoon')); }
+function promoHidden(){
+  const ts = parseInt(localStorage.getItem('jam_promo_hide')||'0');
+  return (now() - ts) < 24*60*60*1000; // しつこくしない：閉じたら24時間出さない
+}
+function hidePromo(){ localStorage.setItem('jam_promo_hide', String(now())); render(); }
+function acctPromoHtml(){
+  if(promoHidden()) return '';
+  return `<div class="card" style="border:1px solid var(--accent)">
+    <div style="font-size:13px; font-weight:600; margin-bottom:8px">${t('acctPromo')}</div>
+    <div class="row">
+      <button class="mini primary" onclick="notYet()">${t('acctBtn')}</button>
+      <button class="mini ghost" onclick="hidePromo()">${t('later')}</button>
+    </div>
+  </div>`;
+}
+function paywallOverlay(){
+  if(!paywallKind) return '';
+  const std = paywallKind==='std';
+  return `<div class="scorev" style="background:rgba(11,12,14,.82)" onclick="closePaywall()">
+    <div style="margin:auto; max-width:340px; width:90%" onclick="event.stopPropagation()">
+      <div class="card" style="text-align:center">
+        <div style="font-size:17px; font-weight:800; margin-bottom:6px">${std?t('paywallStd'):t('paywallPro')}</div>
+        <div class="muted" style="font-size:13px; margin-bottom:12px">${std?t('paywallStdDesc'):t('paywallProDesc')}</div>
+        <button class="primary big" style="width:100%" onclick="notYet()">${t('upgrade')}</button>
+        <div style="margin-top:8px"><button class="mini ghost" onclick="closePaywall()">${t('later')}</button></div>
+      </div>
+    </div>
+  </div>`;
 }
 // セッション情報の1行表示（全画面共通・設定があるものだけ出す）
 function sessionInfoLine(){
@@ -852,6 +910,9 @@ function renderHost(){
       <label class="toggle"><input type="checkbox" ${c.comments?'checked':''} onchange="cfg('comments',this.checked)"> ${t('comments')}</label>
       <label class="toggle"><input type="checkbox" ${c.named?'checked':''} onchange="cfg('named',this.checked)"> ${t('named')}/${t('anon')}</label>
       <label class="toggle"><input type="checkbox" ${c.promptEval?'checked':''} onchange="cfg('promptEval',this.checked)"> ${t('promptEval')}</label>
+      <div class="divider"></div>
+      <div class="row"><span class="muted">${t('proHint')}</span>
+        <button class="mini primary" onclick="openPaywall('pro')">${t('paywallPro')}</button></div>
     </div>
 
     <div class="card">
@@ -901,6 +962,7 @@ function renderHost(){
     ${state.feedback.length ? `<div class="card"><h2>📮 ${t('feedback')}</h2>
       ${state.feedback.slice().reverse().map(f=>`<div class="prow"><span>${esc(f.text)}</span></div>`).join('')}</div>` : ''}
     ${viewerOverlay()}
+    ${paywallOverlay()}
   `;
 }
 
@@ -995,7 +1057,8 @@ function renderJoin(){
       <div class="prow"><span class="nm">${esc(me.name)}</span>
         ${me.parts.map(pt=>`<span class="badge b-lo">${pLabel(me,pt)}</span>`).join(' ')}<span class="spacer"></span>
         <span class="muted">${t('plays')} ${me.plays} · ${me.stayToEnd?'🏁 '+t('untilEnd'):t('remain')+' '+remainMin(me)+'m'}</span></div>
-      <div style="margin-top:8px"><button class="mini" onclick="togglePair()">${t('addDevice')}</button></div>
+      <div style="margin-top:8px"><button class="mini" onclick="togglePair()">${t('addDevice')}</button>
+        <button class="mini ghost" onclick="openPaywall('std')">${t('myRecords')} 🔒</button></div>
       ${pairShown?`<div class="qrbox" style="margin-top:10px">
         <div class="muted" style="margin-bottom:6px">${t('pairHint')}</div>
         <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(pairUrl(me))}" alt="QR">
@@ -1005,6 +1068,7 @@ function renderJoin(){
     ${notifCard(me)}
 
     ${c.evalOn && state.evalAsk ? rateCardFor(state.evalAsk.title, state.evalAsk.sid, state.evalAsk.ids, me, true) : ''}
+    ${state.evalAsk ? acctPromoHtml() : ''}
     ${c.evalOn && cur && !cur.isBreak ? rateCardFor(cur.title, cur.id, performersOf(cur), me, false) : ''}
 
     <div class="card">
@@ -1023,7 +1087,9 @@ function renderJoin(){
       <textarea id="fb" placeholder="${t('feedbackPh')}"></textarea>
       <div style="margin-top:6px"><button class="mini" onclick="sendFeedback()">${t('send')}</button></div>
     </div>
+    ${!state.evalAsk ? acctPromoHtml() : ''}
     ${viewerOverlay()}
+    ${paywallOverlay()}
   `;
 }
 function renderJoinForm(){
