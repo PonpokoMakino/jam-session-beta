@@ -458,7 +458,12 @@ function role(){ const q = location.search; if(q.includes('stand')) return 'stan
 function lang(){ return sessionStorage.getItem('jam_lang') || 'ja'; }
 function setLang(l){ sessionStorage.setItem('jam_lang', l); render(); }
 function t(k){ return T[lang()][k] ?? T.ja[k] ?? k; }
-function partName(p){ return (T[lang()].partNames[p]) ?? p; }
+// 楽器名はどの言語でも常に英語表記で統一（2026-07-06 牧野様指示）。「その他」だけ各言語
+const PART_EN = {drums:'Drums',percussion:'Percussion',bass:'Bass',upright:'Upright bass',
+  guitar:'Electric guitar',acoustic:'Acoustic guitar',keys:'Keys',vocal:'Vocal',
+  alto:'Alto sax',tenor:'Tenor sax',soprano:'Soprano sax',baritone:'Baritone sax',
+  trumpet:'Trumpet',trombone:'Trombone',flugel:'Flugelhorn',viola:'Viola',cello:'Cello'};
+function partName(p){ return PART_EN[p] ?? (T[lang()].partNames[p]) ?? p; }
 function myId(){ return sessionStorage.getItem('jam_me') || null; }
 function setMe(id){ sessionStorage.setItem('jam_me', id); }
 
