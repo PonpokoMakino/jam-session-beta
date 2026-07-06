@@ -134,6 +134,7 @@ const T = {
     lineup:'編成', addLead:'リード追加', swap:'差し替え', requestedBy:'リクエスト',
     participants:'参加者一覧', plays:'出演', until:'まで', remain:'残り',
     yourName:'お名前', yourPart:'担当楽器', tillWhen:'何時まで居られる？', join:'参加する',
+    stayEnd:'最後までいられる', untilEnd:'最後まで', endTime:'セッション終了時刻',
     songReq:'曲をリクエスト', songTitle:'曲名', add:'追加', wantPlay:'この曲 出たい',
     applied:'挙手ずみ', myInfo:'あなたの情報', lang:'言語',
     like:'いいね', bad:'うーん', comment:'コメント', send:'送信', rateNow:'今の演奏へ評価を',
@@ -181,6 +182,7 @@ const T = {
     lineup:'Line-up', addLead:'Add lead', swap:'Swap', requestedBy:'by',
     participants:'Participants', plays:'plays', until:'until', remain:'left',
     yourName:'Your name', yourPart:'Instrument', tillWhen:'Until when can you stay?', join:'Join',
+    stayEnd:'Staying till the end', untilEnd:'till the end', endTime:'Session end time',
     songReq:'Request a song', songTitle:'Song title', add:'Add', wantPlay:'I want to play this',
     applied:'Applied', myInfo:'Your info', lang:'Language',
     like:'Like', bad:'Meh', comment:'Comment', send:'Send', rateNow:'Rate this performance',
@@ -228,6 +230,7 @@ const T = {
     lineup:'편성', addLead:'리드 추가', swap:'교체', requestedBy:'요청',
     participants:'참가자 목록', plays:'출연', until:'까지', remain:'남음',
     yourName:'이름', yourPart:'담당 악기', tillWhen:'몇 시까지 있어요?', join:'참가하기',
+    stayEnd:'끝까지 있을 수 있어요', untilEnd:'끝까지', endTime:'세션 종료 시각',
     songReq:'곡 요청', songTitle:'곡 제목', add:'추가', wantPlay:'이 곡 하고 싶어요',
     applied:'신청함', myInfo:'내 정보', lang:'언어',
     like:'좋아요', bad:'글쎄', comment:'댓글', send:'보내기', rateNow:'지금 연주 평가',
@@ -275,6 +278,7 @@ const T = {
     lineup:'编制', addLead:'加旋律', swap:'替换', requestedBy:'请求',
     participants:'参与者列表', plays:'出演', until:'到', remain:'剩',
     yourName:'姓名', yourPart:'负责乐器', tillWhen:'能待到几点？', join:'参加',
+    stayEnd:'能待到最后', untilEnd:'到最后', endTime:'场次结束时间',
     songReq:'点一首歌', songTitle:'歌名', add:'添加', wantPlay:'我想演这首',
     applied:'已举手', myInfo:'你的信息', lang:'语言',
     like:'赞', bad:'一般', comment:'评论', send:'发送', rateNow:'为这段演奏评价',
@@ -351,7 +355,7 @@ function seed(){
     config:{ tiebreak:'soon', evalOn:true, evalMode:'like', comments:true,
       named:false, promptEval:true, boost:0,
       songApproval:'manual', joinApproval:'manual', autoTiming:1,
-      required: DEFAULT_REQUIRED.slice(), gkEither:false },
+      required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null },
     participants: ps,
     songs: songs,
     standards: DEFAULT_STANDARDS.slice(),
@@ -364,7 +368,7 @@ function load(){
     if(!Array.isArray(s.notifications)) s.notifications = [];
     s.participants.forEach(p=>{ if(!Array.isArray(p.parts)) p.parts = p.part?[p.part]:[]; }); // 旧データ移行: 単一part→parts配列
     s.config = Object.assign({ songApproval:'manual', joinApproval:'manual', autoTiming:1,
-      required: DEFAULT_REQUIRED.slice(), gkEither:false }, s.config);
+      required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null }, s.config);
     return s;
   } }catch(e){}
   const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
@@ -766,6 +770,9 @@ function renderHost(){
           <button class="mini ${c.songApproval==='manual'&&c.joinApproval==='manual'?'primary':''}" onclick="setPreset('manual')">${t('presetManual')}</button>
         </div>
       </div>
+      <div class="field"><label>⏱ ${t('endTime')}</label>
+        <input type="time" value="${c.endTime||''}" onchange="cfg('endTime',this.value||null)">
+      </div>
       <div class="field"><label>${t('tiebreak')}</label>
         <select onchange="cfg('tiebreak',this.value)">
           <option value="soon" ${c.tiebreak==='soon'?'selected':''}>${t('ts_soon')}</option>
@@ -927,7 +934,7 @@ function pRow(p){
   return `<div class="prow"><span class="nm">${esc(p.name)}</span>
     ${p.parts.map(pt=>`<span class="badge b-lo">${pLabel(p,pt)}</span>`).join(' ')}
     <span class="spacer"></span>
-    <span class="muted">${t('plays')} ${p.plays} · ${t('remain')} ${remainMin(p)}m · 👍${p.likes||0}${state.config.evalMode==='likebad'?' 👎'+(p.bads||0):''}</span></div>`;
+    <span class="muted">${t('plays')} ${p.plays} · ${p.stayToEnd?'🏁 '+t('untilEnd'):t('remain')+' '+remainMin(p)+'m'} · 👍${p.likes||0}${state.config.evalMode==='likebad'?' 👎'+(p.bads||0):''}</span></div>`;
 }
 
 function renderJoin(){
@@ -952,7 +959,7 @@ function renderJoin(){
       <h2>🙋 ${t('myInfo')}</h2>
       <div class="prow"><span class="nm">${esc(me.name)}</span>
         ${me.parts.map(pt=>`<span class="badge b-lo">${pLabel(me,pt)}</span>`).join(' ')}<span class="spacer"></span>
-        <span class="muted">${t('plays')} ${me.plays} · ${t('remain')} ${remainMin(me)}m</span></div>
+        <span class="muted">${t('plays')} ${me.plays} · ${me.stayToEnd?'🏁 '+t('untilEnd'):t('remain')+' '+remainMin(me)+'m'}</span></div>
       <div style="margin-top:8px"><button class="mini" onclick="togglePair()">${t('addDevice')}</button></div>
       ${pairShown?`<div class="qrbox" style="margin-top:10px">
         <div class="muted" style="margin-bottom:6px">${t('pairHint')}</div>
@@ -995,7 +1002,9 @@ function renderJoinForm(){
         <div class="field"><label>${t('yourPart')}</label>
           <div class="row">${ALL_PARTS.map(p=>`<label class="toggle"><input type="checkbox" class="jp-part" value="${p}"> ${partName(p)}</label>`).join('')}</div>
           <input type="text" id="jo" placeholder="${t('otherPh')}" style="width:100%;margin-top:6px"></div>
-        <div class="field"><label>${t('tillWhen')}</label><input type="time" id="ju" value="22:30"></div>
+        <div class="field"><label>${t('tillWhen')}</label>
+          <input type="time" id="ju" value="22:30" ${state.config.endTime?`max="${state.config.endTime}"`:''}>
+          <label class="toggle" style="margin-left:10px"><input type="checkbox" id="jstay" onchange="document.getElementById('ju').disabled=this.checked"> 🏁 ${t('stayEnd')}</label></div>
         <button class="primary big" style="width:100%" onclick="doJoin()">${t('join')}</button>
       </div>
     </div>`;
@@ -1063,8 +1072,12 @@ function doJoin(){
   const parts=[...document.querySelectorAll('.jp-part:checked')].map(el=>el.value);
   const otherName=(document.getElementById('jo')?.value||'').trim(); // 「その他」の楽器名（自由記入）
   if(!parts.length) return;
+  const stayToEnd = !!(document.getElementById('jstay')||{}).checked;
+  let until = stayToEnd ? (state.config.endTime||null) : document.getElementById('ju').value;
+  // セッション終了時刻を超える申告は終了時刻に丸める
+  if(until && state.config.endTime && until > state.config.endTime) until = state.config.endTime;
   const p={ id:uid(), name, parts, plays:0,
-    arrived:now(), until:document.getElementById('ju').value, likes:0, bads:0 };
+    arrived:now(), until, stayToEnd, likes:0, bads:0 };
   if(parts.includes('other') && otherName) p.otherName = otherName;
   state.participants.push(p); setMe(p.id); save();
 }
