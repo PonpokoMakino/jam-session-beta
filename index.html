@@ -139,10 +139,10 @@ const T = {
     like:'いいね', bad:'うーん', comment:'コメント', send:'送信', rateNow:'今の演奏へ評価を',
     evalAsk:'演奏が終わりました！みんなの演奏に評価を', cancel:'キャンセル',
     feedback:'改善リクエスト', feedbackPh:'こんな機能が欲しい / ここがこうだと…',
-    breakTime:'☕ 休憩', premiumHint:'🔒 は有料プランで解放される機能（プロトでは全部触れます）',
+    breakTime:'☕ 休憩', resumeAt:'再開予定', premiumHint:'🔒 は有料プランで解放される機能（プロトでは全部触れます）',
     prepYouNext:'あなたの番です！準備して', prepYouNextNext:'次の次はあなた。準備を始めて',
     prepFor:'の準備をお願いします', confirmed:'確定ずみ', notApplied:'まだ希望者がいません',
-    standards:'よく演る曲リスト（スタンダード）', standardsHint:'参加者はここから選んでリクエストできます', pickList:'リストから選ぶ',
+    standards:'よく演る曲リスト（スタンダード）', standardsHint:'参加者はここから選んでリクエストすることもできます', pickList:'リストから選ぶ',
     songApproval:'曲リクエストの扱い', sa_manual:'運営の承認が必要', sa_auto:'自動で受け付ける',
     joinApproval:'メンバーの決め方', jm_manual:'運営が選んで確定', jm_auto:'公平エンジンで自動確定',
     autoTiming:'自動確定のタイミング', before1:'1曲前', before2:'2曲前', before3:'3曲前',
@@ -186,10 +186,10 @@ const T = {
     like:'Like', bad:'Meh', comment:'Comment', send:'Send', rateNow:'Rate this performance',
     evalAsk:'Song finished! Rate the performers', cancel:'Cancel',
     feedback:'Feature request', feedbackPh:'A feature I want / this could be better…',
-    breakTime:'☕ Break', premiumHint:'🔒 = unlocked on paid plan (all usable in this prototype)',
+    breakTime:'☕ Break', resumeAt:'resume', premiumHint:'🔒 = unlocked on paid plan (all usable in this prototype)',
     prepYouNext:"You're up! Get ready", prepYouNextNext:"You're on after next. Start prepping",
     prepFor:'— please get ready', confirmed:'confirmed', notApplied:'No applicants yet',
-    standards:'Standards list', standardsHint:'Players can pick from here', pickList:'Pick from list',
+    standards:'Standards list', standardsHint:'Players can also pick from here', pickList:'Pick from list',
     songApproval:'Song requests', sa_manual:'Host approval required', sa_auto:'Auto-accept',
     joinApproval:'Member selection', jm_manual:'Host picks & confirms', jm_auto:'Auto by fairness engine',
     autoTiming:'Auto-lock timing', before1:'1 song ahead', before2:'2 songs ahead', before3:'3 songs ahead',
@@ -233,10 +233,10 @@ const T = {
     like:'좋아요', bad:'글쎄', comment:'댓글', send:'보내기', rateNow:'지금 연주 평가',
     evalAsk:'연주 종료! 평가를 남겨주세요', cancel:'취소',
     feedback:'개선 요청', feedbackPh:'원하는 기능 / 이런 점이…',
-    breakTime:'☕ 휴식', premiumHint:'🔒 = 유료 플랜에서 해제(프로토는 전부 사용 가능)',
+    breakTime:'☕ 휴식', resumeAt:'재개 예정', premiumHint:'🔒 = 유료 플랜에서 해제(프로토는 전부 사용 가능)',
     prepYouNext:'당신 차례! 준비하세요', prepYouNextNext:'다다음은 당신. 준비 시작',
     prepFor:'— 준비해 주세요', confirmed:'확정', notApplied:'아직 신청자 없음',
-    standards:'자주 하는 곡 목록', standardsHint:'참가자가 여기서 골라 요청할 수 있어요', pickList:'목록에서 선택',
+    standards:'자주 하는 곡 목록', standardsHint:'참가자가 여기서 골라 요청할 수도 있어요', pickList:'목록에서 선택',
     songApproval:'곡 신청 처리', sa_manual:'운영 승인 필요', sa_auto:'자동 접수',
     joinApproval:'멤버 결정 방식', jm_manual:'운영이 골라 확정', jm_auto:'공정 엔진 자동 확정',
     autoTiming:'자동 확정 시점', before1:'1곡 전', before2:'2곡 전', before3:'3곡 전',
@@ -280,10 +280,10 @@ const T = {
     like:'赞', bad:'一般', comment:'评论', send:'发送', rateNow:'为这段演奏评价',
     evalAsk:'演奏结束！请为大家评价', cancel:'取消',
     feedback:'改进建议', feedbackPh:'想要的功能 / 这里可以…',
-    breakTime:'☕ 休息', premiumHint:'🔒 = 付费方案解锁（原型全部可用）',
+    breakTime:'☕ 休息', resumeAt:'预计再开', premiumHint:'🔒 = 付费方案解锁（原型全部可用）',
     prepYouNext:'轮到你了！请准备', prepYouNextNext:'下下首是你，开始准备',
     prepFor:'— 请准备', confirmed:'已确定', notApplied:'暂无报名',
-    standards:'常演曲目', standardsHint:'参与者可从这里挑选点歌', pickList:'从列表选择',
+    standards:'常演曲目', standardsHint:'参与者也可从这里挑选点歌', pickList:'从列表选择',
     songApproval:'点歌处理', sa_manual:'需运营批准', sa_auto:'自动受理',
     joinApproval:'成员确定方式', jm_manual:'运营挑选确定', jm_auto:'公平引擎自动确定',
     autoTiming:'自动确定时机', before1:'提前1首', before2:'提前2首', before3:'提前3首',
@@ -677,13 +677,13 @@ function renderWatch(){
     <div class="card" style="text-align:center; padding:28px 16px">
       <div class="muted">${t('current')}</div>
       ${cur ? (cur.isBreak
-        ? `<div style="font-size:38px;font-weight:800;margin-top:8px">${t('breakTime')}</div>`
+        ? `<div style="font-size:38px;font-weight:800;margin-top:8px">${breakLabel(cur)}</div>`
         : `<div style="font-size:36px;font-weight:800;margin:6px 0 14px">${esc(cur.title)}</div>${memberRows(cur,true)}`)
         : `<div style="font-size:26px;font-weight:700;margin-top:8px">${t('standby')}</div>`}
     </div>
     ${lastCall && lastCall.key==='nCall' ? `<div class="notice">📢 ${tt(lastCall.key, lastCall.vars)}</div>` : ''}
     ${queue.length?`<div class="card"><h2>🎵 ${t('queue')}</h2>
-      ${queue.map(s=>s.isBreak?`<div class="song break">${t('breakTime')}</div>`
+      ${queue.map(s=>s.isBreak?`<div class="song break">${breakLabel(s)}</div>`
         :`<div class="song"><div class="ttl">${esc(s.title)}</div>${memberRows(s,false)}</div>`).join('')}</div>`:''}
     <div class="card qrbox">
       <div class="muted" style="margin-bottom:8px">${t('scanToJoin')}</div>
@@ -829,6 +829,7 @@ function renderHost(){
       <div class="row" style="margin-top:10px">
         <button class="primary" onclick="nextSong()">${t('nextSong')}</button>
         <button onclick="addBreak()">${t('addBreak')}</button>
+        <input type="time" id="breaktime" title="${t('resumeAt')}">
       </div>
     </div>
 
@@ -863,7 +864,7 @@ function renderHost(){
 }
 
 function songCardHost(s, isCurrent){
-  if(s.isBreak) return `<div class="song break">${t('breakTime')}${!isCurrent?` <button class="mini ghost" onclick="rmSong('${s.id}')">✕</button>`:''}</div>`;
+  if(s.isBreak) return `<div class="song break">${breakLabel(s)}${!isCurrent?` <button class="mini ghost" onclick="rmSong('${s.id}')">✕</button>`:''}</div>`;
   // 同じパートが複数枠あるときは「ギター1／ギター2」のように枝番で表示
   const partCounts = {}; s.lineup.forEach(sl=>{ const p=slotPart(sl); partCounts[p]=(partCounts[p]||0)+1; });
   const seenIdx = {};
@@ -1235,8 +1236,15 @@ function rmSong(sid){
   if(i>=0 && state.songs[i].status==='queued'){ state.songs.splice(i,1); save(); }
 }
 function addBreak(){
-  state.songs.push({ id:uid(), title:'break', isBreak:true, lineup:[], apply:{}, manual:{}, vip:[], status:'queued', confirmed:false });
+  // 再開予定時刻は任意（空欄OK）。決めると休憩カードに「⏰HH:MM 再開予定」と出る
+  const el=document.getElementById('breaktime');
+  const resumeAt=(el&&el.value)||null;
+  state.songs.push({ id:uid(), title:'break', isBreak:true, resumeAt, lineup:[], apply:{}, manual:{}, vip:[], status:'queued', confirmed:false });
+  if(el) el.value='';
   save();
+}
+function breakLabel(s){
+  return t('breakTime') + (s.resumeAt ? ` ⏰ ${s.resumeAt} ${t('resumeAt')}` : '');
 }
 function prep(sid, type){
   const s=state.songs.find(x=>x.id===sid);
