@@ -161,7 +161,7 @@ const T = {
     nSongNg:'「{song}」は今回見送りになりました', nLocked:'「{song}」のメンバーが確定しました',
     nCall:'「{song}」の {parts} を募集中！出られる人は挙手を',
     partNames:{drums:'ドラム',percussion:'パーカッション',bass:'ベース',upright:'ウッドベース',
-      guitar:'ギター',keys:'キーボード',vocal:'ボーカル',
+      guitar:'エレキギター',acoustic:'アコースティックギター',keys:'キーボード',vocal:'ボーカル',
       alto:'アルトサックス',tenor:'テナーサックス',soprano:'ソプラノサックス',baritone:'バリトンサックス',
       trumpet:'トランペット',trombone:'トロンボーン',flugel:'フリューゲルホルン',
       viola:'ビオラ',cello:'チェロ',other:'その他'},
@@ -211,7 +211,7 @@ const T = {
     nSongNg:'"{song}" was passed this time', nLocked:'Members locked for "{song}"',
     nCall:'"{song}" needs {parts} — raise your hand!',
     partNames:{drums:'Drums',percussion:'Percussion',bass:'Bass',upright:'Upright bass',
-      guitar:'Guitar',keys:'Keys',vocal:'Vocal',
+      guitar:'Electric guitar',acoustic:'Acoustic guitar',keys:'Keys',vocal:'Vocal',
       alto:'Alto sax',tenor:'Tenor sax',soprano:'Soprano sax',baritone:'Baritone sax',
       trumpet:'Trumpet',trombone:'Trombone',flugel:'Flugelhorn',
       viola:'Viola',cello:'Cello',other:'Other'},
@@ -261,7 +261,7 @@ const T = {
     nSongNg:'「{song}」은(는) 이번에 보류되었어요', nLocked:'「{song}」 멤버가 확정되었어요',
     nCall:'「{song}」의 {parts} 모집 중! 가능하면 손들어 주세요',
     partNames:{drums:'드럼',percussion:'퍼커션',bass:'베이스',upright:'우드베이스',
-      guitar:'기타',keys:'키보드',vocal:'보컬',
+      guitar:'일렉 기타',acoustic:'어쿠스틱 기타',keys:'키보드',vocal:'보컬',
       alto:'알토 색소폰',tenor:'테너 색소폰',soprano:'소프라노 색소폰',baritone:'바리톤 색소폰',
       trumpet:'트럼펫',trombone:'트롬본',flugel:'플루겔호른',
       viola:'비올라',cello:'첼로',other:'그 외'},
@@ -311,7 +311,7 @@ const T = {
     nSongNg:'「{song}」本次暂缓', nLocked:'「{song}」成员已确定',
     nCall:'「{song}」招募{parts}！能上的请举手',
     partNames:{drums:'鼓',percussion:'打击乐',bass:'贝斯',upright:'低音提琴',
-      guitar:'吉他',keys:'键盘',vocal:'主唱',
+      guitar:'电吉他',acoustic:'木吉他',keys:'键盘',vocal:'主唱',
       alto:'中音萨克斯',tenor:'次中音萨克斯',soprano:'高音萨克斯',baritone:'上低音萨克斯',
       trumpet:'小号',trombone:'长号',flugel:'柔音号',
       viola:'中提琴',cello:'大提琴',other:'其他'},
@@ -320,7 +320,7 @@ const T = {
   },
 };
 // パートは全部同格（リード/土台の区別は廃止）。「必須パート」は運営が設定で自由に決める
-const ALL_PARTS = ['drums','percussion','bass','upright','guitar','keys','vocal',
+const ALL_PARTS = ['drums','percussion','bass','upright','guitar','acoustic','keys','vocal',
   'alto','tenor','soprano','baritone','trumpet','trombone','flugel','viola','cello','other'];
 const DEFAULT_REQUIRED = ['drums','bass','guitar','keys'];
 // 主催者用「よく演る曲リスト」初期パッケージ（セッション定番）
