@@ -140,6 +140,7 @@ const T = {
     like:'いいね', bad:'うーん', comment:'コメント', send:'送信', rateNow:'今の演奏へ評価を',
     evalAsk:'演奏が終わりました！みんなの演奏に評価を', cancel:'キャンセル',
     feedback:'改善リクエスト', feedbackPh:'こんな機能が欲しい / ここがこうだと…',
+    xpPromo:'⭐ 今日 {xp} XP 獲得中！アカウントを作ると保存されてレベルが上がる',
     acctPromo:'🎁 無料アカウントで「今日の出演・👍・写真」がずっと残る＆次の開催通知が届く',
     acctBtn:'Googleで続ける（1タップ・入力なし）', later:'あとで', comingSoon:'正式版で使えます（β準備中）',
     myRecords:'📖 出演記録', upgrade:'アップグレード',
@@ -196,6 +197,7 @@ const T = {
     like:'Like', bad:'Meh', comment:'Comment', send:'Send', rateNow:'Rate this performance',
     evalAsk:'Song finished! Rate the performers', cancel:'Cancel',
     feedback:'Feature request', feedbackPh:'A feature I want / this could be better…',
+    xpPromo:'⭐ {xp} XP earned today! Create an account to save it & level up',
     acctPromo:'🎁 Free account keeps today\'s plays, 👍 & photos forever + session alerts',
     acctBtn:'Continue with Google (1 tap, no typing)', later:'Later', comingSoon:'Coming in the full release (beta)',
     myRecords:'📖 My records', upgrade:'Upgrade',
@@ -252,6 +254,7 @@ const T = {
     like:'좋아요', bad:'글쎄', comment:'댓글', send:'보내기', rateNow:'지금 연주 평가',
     evalAsk:'연주 종료! 평가를 남겨주세요', cancel:'취소',
     feedback:'개선 요청', feedbackPh:'원하는 기능 / 이런 점이…',
+    xpPromo:'⭐ 오늘 {xp} XP 획득 중! 계정을 만들면 저장되고 레벨 업',
     acctPromo:'🎁 무료 계정으로 오늘의 출연·👍·사진이 계속 남고 개최 알림도 도착',
     acctBtn:'Google로 계속(1탭·입력 없음)', later:'나중에', comingSoon:'정식판에서 사용 가능(β준비 중)',
     myRecords:'📖 출연 기록', upgrade:'업그레이드',
@@ -308,6 +311,7 @@ const T = {
     like:'赞', bad:'一般', comment:'评论', send:'发送', rateNow:'为这段演奏评价',
     evalAsk:'演奏结束！请为大家评价', cancel:'取消',
     feedback:'改进建议', feedbackPh:'想要的功能 / 这里可以…',
+    xpPromo:'⭐ 今日已获得 {xp} XP！创建账号即可保存并升级',
     acctPromo:'🎁 免费账号可永久保留今天的出演·👍·照片，并接收开演通知',
     acctBtn:'用Google继续（1键·无需输入）', later:'以后再说', comingSoon:'正式版开放（β筹备中）',
     myRecords:'📖 出演记录', upgrade:'升级',
@@ -561,9 +565,16 @@ function promoHidden(){
   return (now() - ts) < 24*60*60*1000; // しつこくしない：閉じたら24時間出さない
 }
 function hidePromo(){ localStorage.setItem('jam_promo_hide', String(now())); render(); }
-function acctPromoHtml(){
+function xpOf(p){
+  // 今日のXP（デモ）: 参加50 + 出演20/曲 + 👍5 + 譜面アップ10（本番はDB関数で改ざん不可に）
+  const scoreUps = state.songs.reduce((n,sg)=>n+((sg.scores||[]).some(sc=>sc.upId===p.id)?1:0),0);
+  return 50 + (p.plays||0)*20 + (p.likes||0)*5 + scoreUps*10;
+}
+function acctPromoHtml(me){
   if(promoHidden()) return '';
+  const xpLine = me ? `<div style="font-size:14px; font-weight:800; margin-bottom:4px">${t('xpPromo').replace('{xp}', xpOf(me))}</div>` : '';
   return `<div class="card" style="border:1px solid var(--accent)">
+    ${xpLine}
     <div style="font-size:13px; font-weight:600; margin-bottom:8px">${t('acctPromo')}</div>
     <div class="row">
       <button class="mini primary" onclick="notYet()">${t('acctBtn')}</button>
@@ -1087,7 +1098,7 @@ function renderJoin(){
     ${notifCard(me)}
 
     ${c.evalOn && state.evalAsk ? rateCardFor(state.evalAsk.title, state.evalAsk.sid, state.evalAsk.ids, me, true) : ''}
-    ${state.evalAsk ? acctPromoHtml() : ''}
+    ${state.evalAsk ? acctPromoHtml(me) : ''}
     ${c.evalOn && cur && !cur.isBreak ? rateCardFor(cur.title, cur.id, performersOf(cur), me, false) : ''}
 
     <div class="card">
@@ -1106,7 +1117,7 @@ function renderJoin(){
       <textarea id="fb" placeholder="${t('feedbackPh')}"></textarea>
       <div style="margin-top:6px"><button class="mini" onclick="sendFeedback()">${t('send')}</button></div>
     </div>
-    ${!state.evalAsk ? acctPromoHtml() : ''}
+    ${!state.evalAsk ? acctPromoHtml(me) : ''}
     ${viewerOverlay()}
     ${paywallOverlay()}
   `;
