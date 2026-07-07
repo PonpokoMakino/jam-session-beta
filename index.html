@@ -401,6 +401,10 @@ function load(){
     if(!Array.isArray(s.standards)) s.standards = DEFAULT_STANDARDS.slice(); // 旧データ移行
     if(!Array.isArray(s.notifications)) s.notifications = [];
     s.participants.forEach(p=>{ if(!Array.isArray(p.parts)) p.parts = p.part?[p.part]:[]; }); // 旧データ移行: 単一part→parts配列
+    s.songs.forEach(sg=>{ // 旧データ移行: 単一score→scores配列（複数人アップ対応）
+      if(sg.score){ sg.scores=[{id:'m'+Math.random().toString(36).slice(2,9), pages:sg.score.pages||[], upName:sg.score.up||'?', upId:null}]; delete sg.score; }
+      if(!Array.isArray(sg.scores)) sg.scores=[];
+    });
     s.config = Object.assign({ songApproval:'manual', joinApproval:'manual', autoTiming:1,
       required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null,
       sessionName:'', venueName:'', venuePlace:'', startTime:null }, s.config);
@@ -678,30 +682,43 @@ async function onScoreFiles(sid, input){
   input.value='';
   if(!pages.length) return;
   const me=getP(myId());
-  s.score={ pages: pages.slice(0,3), up: me?me.name:'' };
+  // 複数人がそれぞれアップできる。同じ人の再アップは自分の分だけ置き換え
+  s.scores = (s.scores||[]).filter(sc=>!(me && sc.upId===me.id));
+  s.scores.push({ id:uid(), pages: pages.slice(0,3), upName: me?me.name:'?', upId: me?me.id:null });
   save(); flash('🎼');
 }
-function openScore(sid){ viewerSid=sid; viewerPage=0; keepAwake(); render(); }
+function findScore(sid, scid){
+  const s=state.songs.find(x=>x.id===sid); if(!s) return {};
+  return { s, sc: (s.scores||[]).find(x=>x.id===scid) };
+}
+let viewerScoreId=null;
+function openScore(sid, scid){ viewerSid=sid; viewerScoreId=scid; viewerPage=0; keepAwake(); render(); }
 function viewerOverlay(){
   if(!viewerSid) return '';
-  const s=state.songs.find(x=>x.id===viewerSid);
-  if(!s||!s.score||!s.score.pages.length){ viewerSid=null; return ''; } // 演奏終了で自動削除→開いていた画面も閉じる
-  return scoreViewerHtml(s, false);
+  const { s, sc } = findScore(viewerSid, viewerScoreId);
+  if(!s||!sc||!sc.pages.length){ viewerSid=null; viewerScoreId=null; return ''; } // 削除/演奏終了→開いていた画面も閉じる
+  return scoreViewerHtml(s, sc, false);
 }
-function closeScore(){ viewerSid=null; render(); }
-function rmScore(sid){ const s=state.songs.find(x=>x.id===sid); if(s){ delete s.score; save(); } }
+function closeScore(){ viewerSid=null; viewerScoreId=null; render(); }
+function rmScore(sid, scid){
+  // 取り下げ：本人は自分の譜面のみ・運営(hostビュー)は誰のでも
+  const { s, sc } = findScore(sid, scid); if(!s||!sc) return;
+  if(role()!=='host' && sc.upId!==myId()) return;
+  s.scores = s.scores.filter(x=>x.id!==scid);
+  save(); flash('✕');
+}
 function svTS(e){ tX=e.touches[0].clientX; }
 function svTE(e){ if(tX==null) return; const dx=e.changedTouches[0].clientX-tX; tX=null; if(Math.abs(dx)>40) svNav(dx<0?1:-1); }
 function svNav(dir){
-  const s=state.songs.find(x=>x.id===viewerSid); if(!s||!s.score) return;
+  const { sc } = findScore(viewerSid, viewerScoreId); if(!sc) return;
   const per = (window.innerWidth>window.innerHeight)?2:1;
-  const max = Math.max(0, s.score.pages.length-per);
+  const max = Math.max(0, sc.pages.length-per);
   viewerPage = Math.min(max, Math.max(0, viewerPage + dir*per));
   render();
 }
-function scoreViewerHtml(s, fullscreen){
+function scoreViewerHtml(s, sc, fullscreen){
   // 2ページまで＝全部を一度に最大表示。3ページ以上＝スワイプ（横置き2枚ずつ/縦置き1枚ずつ）
-  const pgs=s.score.pages;
+  const pgs=sc.pages;
   const landscape = window.innerWidth>window.innerHeight;
   let shown, dots='';
   if(pgs.length<=2){
@@ -712,7 +729,7 @@ function scoreViewerHtml(s, fullscreen){
     dots=`<div class="dots">${Array.from({length:Math.ceil(pgs.length/(landscape?2:1))},(_,i)=>(i===Math.floor(viewerPage/(landscape?2:1))?'●':'○')).join(' ')}　←→</div>`;
   }
   return `<div class="scorev" oncontextmenu="return false" ontouchstart="svTS(event)" ontouchend="svTE(event)">
-    <div class="bar"><b>🎼 ${esc(s.title)}</b><span class="spacer"></span>
+    <div class="bar"><b>🎼 ${esc(s.title)}</b>　<span>📄 ${esc(sc.upName||'?')}</span><span class="spacer"></span>
       <span>${t('scoreAutoDel')}</span>
       ${fullscreen?'':`<button class="mini" onclick="closeScore()">${t('close')}</button>`}</div>
     <div class="pages">${shown.map(p=>`<img src="${p}" draggable="false">`).join('')}</div>
@@ -722,9 +739,10 @@ function scoreViewerHtml(s, fullscreen){
 /* 譜面台モード（設備端末/2台目タブレット）：演奏中の曲の譜面を自動でフル表示 */
 function renderStand(){
   const cur = state.songs.find(x=>x.status==='current' && !x.isBreak);
-  if(cur && cur.score && cur.score.pages.length){
-    viewerSid = cur.id;
-    app().innerHTML = scoreViewerHtml(cur, true);
+  const firstScore = cur && (cur.scores||[])[0];
+  if(cur && firstScore && firstScore.pages.length){
+    viewerSid = cur.id; viewerScoreId = firstScore.id;
+    app().innerHTML = scoreViewerHtml(cur, firstScore, true);
     return;
   }
   app().innerHTML = `
@@ -1008,8 +1026,7 @@ function songCardHost(s, isCurrent){
       <select id="slotp-${s.id}">${ALL_PARTS.map(p=>`<option value="${p}">${partName(p)}</option>`).join('')}</select>
       <button class="mini" onclick="addSlot('${s.id}')">＋${t('addPart')}</button>
       <button class="mini" onclick="vipInsert('${s.id}')">👑 ${t('vipInsert')}</button>
-      ${s.score&&s.score.pages.length?`<button class="mini" onclick="openScore('${s.id}')">🎼</button>
-        <button class="mini ghost" onclick="rmScore('${s.id}')">🎼✕</button>`:''}
+      ${(s.scores||[]).map(sc=>`<button class="mini" onclick="openScore('${s.id}','${sc.id}')">🎼 ${esc(sc.upName)}</button><button class="mini ghost" onclick="rmScore('${s.id}','${sc.id}')">✕</button>`).join('')}
       ${isCurrent?`<button class="mini primary" onclick="confirmSong('${s.id}')">${t('confirm')}</button>
         <button class="mini" onclick="prep('${s.id}','next')">${t('prepNext')}</button>`:''}
       ${!isCurrent?`<button class="mini" onclick="prep('${s.id}','nextnext')">${t('prepNextNext')}</button>
@@ -1134,7 +1151,7 @@ function songCardJoin(s, me){
       ${btns}
     </div>
     <div class="row" style="margin-top:6px">
-      ${s.score&&s.score.pages.length?`<button class="mini" onclick="openScore('${s.id}')">${t('viewScore')}</button>`:''}
+      ${(s.scores||[]).map(sc=>`<button class="mini" onclick="openScore('${s.id}','${sc.id}')">🎼 ${esc(sc.upName)}</button>${sc.upId===me.id?`<button class="mini ghost" title="${t('withdraw')}" onclick="rmScore('${s.id}','${sc.id}')">✕</button>`:''}`).join('')}
       <button class="mini ghost" onclick="pickScore('${s.id}')">${t('uploadScore')}</button>
       <button class="mini ghost" onclick="pickShot('${s.id}')">${t('takePhoto')}</button>
       <input type="file" id="scf-${s.id}" accept="image/*,application/pdf" multiple style="display:none" onchange="onScoreFiles('${s.id}',this)">
@@ -1340,7 +1357,7 @@ function nextSong(){
     const perf = Object.values(cur.members);
     perf.forEach(id=>{ const p=getP(id); if(p) p.plays++; });
     cur.status='done';
-    delete cur.score; // 譜面は演奏終了でその場限りの自動削除（権利配慮の肝）
+    cur.scores = []; // 譜面は演奏終了で全員分その場限りの自動削除（権利配慮の肝）
     // 曲終わりの評価催促（運営オプション）：終わった曲の実メンバーへの評価を全員に促す
     state.evalAsk = (state.config.evalOn && state.config.promptEval && perf.length)
       ? { sid:cur.id, title:cur.title, ids:perf.slice(), ts:now() } : null;
