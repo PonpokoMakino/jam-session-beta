@@ -570,6 +570,9 @@ function xpOf(p){
   const scoreUps = state.songs.reduce((n,sg)=>n+((sg.scores||[]).some(sc=>sc.upId===p.id)?1:0),0);
   return 50 + (p.plays||0)*20 + (p.likes||0)*5 + scoreUps*10;
 }
+function levelOf(p){ return Math.floor(Math.sqrt(xpOf(p)/100)) + 1; } // 100XPでLv2・400でLv3（√曲線）
+function titleOf(lv){ return lv>=30?'Legend':lv>=20?'Veteran':lv>=10?'Regular':lv>=5?'Sessionman':'Rookie'; }
+function lvBadge(p){ const lv=levelOf(p); return `<span class="badge b-core" title="${titleOf(lv)}">Lv.${lv}</span>`; }
 function acctPromoHtml(me){
   if(promoHidden()) return '';
   const xpLine = me ? `<div style="font-size:14px; font-weight:800; margin-bottom:4px">${t('xpPromo').replace('{xp}', xpOf(me))}</div>` : '';
@@ -1056,6 +1059,7 @@ function pLabel(p, pt){
 }
 function pRow(p){
   return `<div class="prow"><span class="nm">${esc(p.name)}</span>
+    ${lvBadge(p)}
     ${p.parts.map(pt=>`<span class="badge b-lo">${pLabel(p,pt)}</span>`).join(' ')}
     ${p.msg?`<span class="muted">💬 ${esc(p.msg)}</span>`:''}
     <span class="spacer"></span>
@@ -1084,6 +1088,7 @@ function renderJoin(){
     <div class="card">
       <h2>🙋 ${t('myInfo')}</h2>
       <div class="prow"><span class="nm">${esc(me.name)}</span>
+        ${lvBadge(me)}
         ${me.parts.map(pt=>`<span class="badge b-lo">${pLabel(me,pt)}</span>`).join(' ')}
         ${me.msg?`<span class="muted">💬 ${esc(me.msg)}</span>`:''}<span class="spacer"></span>
         <span class="muted">${t('plays')} ${me.plays} · ${me.stayToEnd?'🏁 '+t('untilEnd'):t('remain')+' '+remainMin(me)+'m'}</span></div>
