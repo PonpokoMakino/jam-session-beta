@@ -158,7 +158,7 @@ const T = {
     notifications:'お知らせ', unfilled:'あと必要', callFor:'📢 募集を呼びかけ', assign:'決定',
     presets:'運営スタイル（ワンタップ切替）', presetAuto:'🤖 全自動（見てるだけ）', presetManual:'✋ 全部承認（手動）', addPart:'パート枠を追加',
     watchMode:'📺 見学・モニター表示', standby:'まもなく開始', watcher:'見学',
-    otherPh:'「その他」の楽器名（自由記入）',
+    otherPh:'「その他」の楽器名（自由記入）', oneWord:'ひとこと（任意）',
     addDevice:'📱 端末を追加', pairHint:'このQRをもう1台（タブレット等）で読むと、同じ参加者として入れます。譜面を見るならタブレット推奨',
     uploadScore:'🎼 譜面をアップ（画像/PDF）', takePhoto:'📷 撮ってアップ', viewScore:'🎼 譜面を見る', close:'✕ 閉じる',
     scoreNotice:'著作権を侵害するもの（市販譜面のコピー等）はアップロードしないでください。自作・権利OKのものだけお願いします。譜面は演奏が終わると自動削除されます。',
@@ -214,7 +214,7 @@ const T = {
     notifications:'Notifications', unfilled:'Still needed', callFor:'📢 Call for players', assign:'Assign',
     presets:'Host style (one tap)', presetAuto:'🤖 Full auto', presetManual:'✋ Approve everything', addPart:'Add part slot',
     watchMode:'📺 Watch / Monitor view', standby:'Starting soon', watcher:'Watching',
-    otherPh:'Name your "Other" instrument',
+    otherPh:'Name your "Other" instrument', oneWord:'One-liner (optional)',
     addDevice:'📱 Add a device', pairHint:'Scan this QR with another device (tablet recommended for scores) to join as the same player',
     uploadScore:'🎼 Upload score (image/PDF)', takePhoto:'📷 Snap & upload', viewScore:'🎼 View score', close:'✕ Close',
     scoreNotice:'Do not upload copyrighted material (e.g. copies of published scores). Own/licensed charts only. Scores are auto-deleted when the song ends.',
@@ -270,7 +270,7 @@ const T = {
     notifications:'알림', unfilled:'더 필요', callFor:'📢 모집 알리기', assign:'결정',
     presets:'운영 스타일(원탭)', presetAuto:'🤖 완전 자동', presetManual:'✋ 전부 승인(수동)', addPart:'파트 슬롯 추가',
     watchMode:'📺 관전·모니터 표시', standby:'곧 시작', watcher:'관전',
-    otherPh:'「기타」 악기 이름(자유 기입)',
+    otherPh:'「기타」 악기 이름(자유 기입)', oneWord:'한마디(선택)',
     addDevice:'📱 기기 추가', pairHint:'이 QR을 다른 기기(악보는 태블릿 권장)로 읽으면 같은 참가자로 들어옵니다',
     uploadScore:'🎼 악보 업로드(이미지/PDF)', takePhoto:'📷 찍어서 업로드', viewScore:'🎼 악보 보기', close:'✕ 닫기',
     scoreNotice:'저작권을 침해하는 자료(시판 악보 복사 등)는 업로드하지 마세요. 자작/허가된 악보만. 연주가 끝나면 자동 삭제됩니다.',
@@ -326,7 +326,7 @@ const T = {
     notifications:'通知', unfilled:'还缺', callFor:'📢 发起招募', assign:'确定',
     presets:'运营风格(一键)', presetAuto:'🤖 全自动', presetManual:'✋ 全部审批(手动)', addPart:'加乐器位',
     watchMode:'📺 观看·大屏模式', standby:'即将开始', watcher:'观看',
-    otherPh:'「其他」乐器名称（自由填写）',
+    otherPh:'「其他」乐器名称（自由填写）', oneWord:'一句话(可选)',
     addDevice:'📱 添加设备', pairHint:'用另一台设备（看谱推荐平板）扫此二维码，即可以同一参与者身份加入',
     uploadScore:'🎼 上传乐谱(图片/PDF)', takePhoto:'📷 拍照上传', viewScore:'🎼 查看乐谱', close:'✕ 关闭',
     scoreNotice:'请勿上传侵犯版权的内容（如市售乐谱的复印件）。仅限自作/已授权乐谱。演奏结束后自动删除。',
@@ -1046,6 +1046,7 @@ function pLabel(p, pt){
 function pRow(p){
   return `<div class="prow"><span class="nm">${esc(p.name)}</span>
     ${p.parts.map(pt=>`<span class="badge b-lo">${pLabel(p,pt)}</span>`).join(' ')}
+    ${p.msg?`<span class="muted">💬 ${esc(p.msg)}</span>`:''}
     <span class="spacer"></span>
     <span class="muted">${t('plays')} ${p.plays} · ${p.stayToEnd?'🏁 '+t('untilEnd'):t('remain')+' '+remainMin(p)+'m'} · 👍${p.likes||0}${state.config.evalMode==='likebad'?' 👎'+(p.bads||0):''}</span></div>`;
 }
@@ -1072,7 +1073,8 @@ function renderJoin(){
     <div class="card">
       <h2>🙋 ${t('myInfo')}</h2>
       <div class="prow"><span class="nm">${esc(me.name)}</span>
-        ${me.parts.map(pt=>`<span class="badge b-lo">${pLabel(me,pt)}</span>`).join(' ')}<span class="spacer"></span>
+        ${me.parts.map(pt=>`<span class="badge b-lo">${pLabel(me,pt)}</span>`).join(' ')}
+        ${me.msg?`<span class="muted">💬 ${esc(me.msg)}</span>`:''}<span class="spacer"></span>
         <span class="muted">${t('plays')} ${me.plays} · ${me.stayToEnd?'🏁 '+t('untilEnd'):t('remain')+' '+remainMin(me)+'m'}</span></div>
       <div style="margin-top:8px"><button class="mini" onclick="togglePair()">${t('addDevice')}</button>
         <button class="mini ghost" onclick="openPaywall('std')">${t('myRecords')} 🔒</button></div>
@@ -1118,8 +1120,9 @@ function renderJoinForm(){
         <div class="field"><label>${t('lang')}</label>${langSelect()}</div>
         <div class="field"><label>${t('yourName')}</label><input type="text" id="jn" style="width:100%"></div>
         <div class="field"><label>${t('yourPart')}</label>
-          <div class="row">${ALL_PARTS.map(p=>`<label class="toggle"><input type="checkbox" class="jp-part" value="${p}"> ${partName(p)}</label>`).join('')}</div>
-          <input type="text" id="jo" placeholder="${t('otherPh')}" style="width:100%;margin-top:6px"></div>
+          <div class="row">${ALL_PARTS.map(p=>`<label class="toggle"><input type="checkbox" class="jp-part" value="${p}"${p==='other'?` onchange="document.getElementById('jo').disabled=!this.checked"`:''}> ${partName(p)}</label>`).join('')}</div>
+          <input type="text" id="jo" placeholder="${t('otherPh')}" disabled style="width:100%;margin-top:6px"></div>
+        <div class="field"><input type="text" id="jw" placeholder="💬 ${t('oneWord')}" style="width:100%"></div>
         <div class="field"><label>${t('tillWhen')}</label>
           <input type="time" id="ju" value="22:30" ${state.config.endTime?`max="${state.config.endTime}"`:''}>
           <label class="toggle" style="margin-left:10px"><input type="checkbox" id="jstay" onchange="document.getElementById('ju').disabled=this.checked"> 🏁 ${t('stayEnd')}</label></div>
@@ -1199,6 +1202,7 @@ function doJoin(){
   const p={ id:uid(), name, parts, plays:0,
     arrived:now(), until, stayToEnd, likes:0, bads:0 };
   if(parts.includes('other') && otherName) p.otherName = otherName;
+  const msg=(document.getElementById('jw')?.value||'').trim(); if(msg) p.msg = msg; // ひとこと（任意）
   state.participants.push(p); setMe(p.id); save();
 }
 function addSongTitle(title){
