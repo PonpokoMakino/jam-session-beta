@@ -1490,13 +1490,17 @@ if(role()==='watch'||role()==='stand') keepAwake(); // モニター/譜面台表
     || 'https://zrkpgkdasbrargmxravc.supabase.co/functions/v1/help-assistant';
   const UI = {
     ja:{btn:'使い方',title:'使い方 案内係',ph:'例：どうやって参加するの？',send:'送信',
-        hi:'こんにちは！このアプリの使い方、なんでも聞いてね🎸',err:'うまく繋がらなかった。もう一度試してね'},
+        hi:'こんにちは！このアプリの使い方、なんでも聞いてね🎸',err:'うまく繋がらなかった。もう一度試してね',
+        sug:['どうやって参加するの？','曲をリクエストしたい','演奏に出るには？','途中で帰るときは？']},
     en:{btn:'Help',title:'How-to Guide',ph:'e.g. How do I join?',send:'Send',
-        hi:'Hi! Ask me anything about how to use this app 🎸',err:'Connection failed. Please try again'},
+        hi:'Hi! Ask me anything about how to use this app 🎸',err:'Connection failed. Please try again',
+        sug:['How do I join?','How do I request a song?','How do I get to play?','What if I leave early?']},
     ko:{btn:'사용법',title:'사용법 안내',ph:'예: 어떻게 참가하나요?',send:'보내기',
-        hi:'안녕하세요! 앱 사용법 뭐든 물어보세요 🎸',err:'연결에 실패했어요. 다시 시도해 주세요'},
+        hi:'안녕하세요! 앱 사용법 뭐든 물어보세요 🎸',err:'연결에 실패했어요. 다시 시도해 주세요',
+        sug:['어떻게 참가하나요?','곡을 신청하고 싶어요','연주에 나가려면?','중간에 가야 할 때는?']},
     zh:{btn:'帮助',title:'使用向导',ph:'例如：如何参加？',send:'发送',
-        hi:'你好！关于用法尽管问我 🎸',err:'连接失败，请重试'},
+        hi:'你好！关于用法尽管问我 🎸',err:'连接失败，请重试',
+        sug:['如何参加？','想点一首歌','怎么上台演奏？','中途要走怎么办？']},
   };
   const u = ()=> UI[lang()] || UI.ja;
   const messages = []; // {role:'user'|'assistant', content}
@@ -1523,6 +1527,10 @@ if(role()==='watch'||role()==='stand') keepAwake(); // モニター/譜面台表
     #ha-in{flex:1;border:1px solid var(--line2);border-radius:var(--radius-s);padding:9px 10px;font-size:13px;background:var(--bg);color:var(--ink);}
     #ha-send{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-s);padding:0 14px;font-weight:700;}
     #ha-send:disabled{opacity:.5;}
+    #ha-chips{display:flex;flex-wrap:wrap;gap:6px;align-self:flex-start;}
+    .ha-chip{border:1px solid var(--accent);color:var(--accent);background:transparent;
+      border-radius:999px;padding:6px 11px;font-size:12px;cursor:pointer;text-align:left;}
+    .ha-chip:hover{background:var(--soft);}
   `;
   document.head.appendChild(st);
 
@@ -1546,15 +1554,25 @@ if(role()==='watch'||role()==='stand') keepAwake(); // モニター/譜面台表
     const d=document.createElement('div'); d.className='ha-msg '+cls; d.textContent=text;
     body.appendChild(d); body.scrollTop=body.scrollHeight; return d;
   }
+  function chips(){
+    // 質問の候補（よくある質問）＝タップだけで聞ける。最初の発言までの間だけ表示
+    if(messages.length || document.getElementById('ha-chips')) return;
+    const w=document.createElement('div'); w.id='ha-chips';
+    u().sug.forEach(s=>{ const b=document.createElement('button'); b.className='ha-chip'; b.textContent=s;
+      b.addEventListener('click', ()=>ask(s)); w.appendChild(b); });
+    body.appendChild(w); body.scrollTop=body.scrollHeight;
+  }
   function openPanel(){
     open=true; panel.classList.add('on'); syncLabels();
     if(!body.childElementCount) bubble('ha-a', u().hi);
+    chips();
     $('ha-in').focus();
   }
   function closePanel(){ open=false; panel.classList.remove('on'); }
-  async function ask(){
+  async function ask(preset){
     if(busy) return;
-    const inp=$('ha-in'); const q=inp.value.trim(); if(!q) return;
+    const inp=$('ha-in'); const q=(typeof preset==='string'?preset:inp.value.trim()); if(!q) return;
+    const c=document.getElementById('ha-chips'); if(c) c.remove();
     inp.value=''; messages.push({role:'user',content:q}); bubble('ha-u', q);
     busy=true; $('ha-send').disabled=true;
     const typing=document.createElement('div'); typing.className='ha-typing'; typing.textContent='…'; body.appendChild(typing); body.scrollTop=body.scrollHeight;
