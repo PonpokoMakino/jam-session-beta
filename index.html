@@ -157,6 +157,8 @@ const T = {
     requiredParts:'必須パート（これが揃えば成立）', gkEither:'ギター/キーボードはどちらか一方でOK',
     pending:'承認待ち', approve:'承認', reject:'見送り',
     notifications:'お知らせ', unfilled:'あと必要', callFor:'📢 募集を呼びかけ', assign:'決定',
+    invite:'打診', staffName:'係の名前（通知の差出人・自由に命名OK）',
+    nInvite:'{from}: 「{song}」を {part} でやりませんか？',
     presets:'運営スタイル（ワンタップ切替）', presetAuto:'🤖 全自動（見てるだけ）', presetManual:'✋ 全部承認（手動）', addPart:'パート枠を追加',
     watchMode:'📺 見学・モニター表示', standby:'まもなく開始', watcher:'見学',
     otherPh:'「その他」の楽器名（自由記入）', oneWord:'ひとこと（任意）',
@@ -214,6 +216,8 @@ const T = {
     requiredParts:'Required parts', gkEither:'Guitar OR keys is enough',
     pending:'Pending', approve:'Approve', reject:'Pass',
     notifications:'Notifications', unfilled:'Still needed', callFor:'📢 Call for players', assign:'Assign',
+    invite:'Invite', staffName:'Staff name (notification sender, name it freely)',
+    nInvite:'{from}: Want to play {part} on "{song}"?',
     presets:'Host style (one tap)', presetAuto:'🤖 Full auto', presetManual:'✋ Approve everything', addPart:'Add part slot',
     watchMode:'📺 Watch / Monitor view', standby:'Starting soon', watcher:'Watching',
     otherPh:'Name your "Other" instrument', oneWord:'One-liner (optional)',
@@ -271,6 +275,8 @@ const T = {
     requiredParts:'필수 파트', gkEither:'기타/키보드 중 하나면 OK',
     pending:'승인 대기', approve:'승인', reject:'보류',
     notifications:'알림', unfilled:'더 필요', callFor:'📢 모집 알리기', assign:'결정',
+    invite:'제안', staffName:'스태프 이름(알림 발신자·자유롭게)',
+    nInvite:'{from}: 「{song}」 {part} 해보실래요?',
     presets:'운영 스타일(원탭)', presetAuto:'🤖 완전 자동', presetManual:'✋ 전부 승인(수동)', addPart:'파트 슬롯 추가',
     watchMode:'📺 관전·모니터 표시', standby:'곧 시작', watcher:'관전',
     otherPh:'「기타」 악기 이름(자유 기입)', oneWord:'한마디(선택)',
@@ -328,6 +334,8 @@ const T = {
     requiredParts:'必需乐器', gkEither:'吉他/键盘二选一即可',
     pending:'待批准', approve:'批准', reject:'暂缓',
     notifications:'通知', unfilled:'还缺', callFor:'📢 发起招募', assign:'确定',
+    invite:'邀请', staffName:'工作人员名称(通知发送者·自由命名)',
+    nInvite:'{from}: 要不要用 {part} 来一首「{song}」?',
     presets:'运营风格(一键)', presetAuto:'🤖 全自动', presetManual:'✋ 全部审批(手动)', addPart:'加乐器位',
     watchMode:'📺 观看·大屏模式', standby:'即将开始', watcher:'观看',
     otherPh:'「其他」乐器名称（自由填写）', oneWord:'一句话(可选)',
@@ -393,7 +401,7 @@ function seed(){
       named:false, promptEval:true, boost:0,
       songApproval:'manual', joinApproval:'manual', autoTiming:1,
       required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null,
-      sessionName:'', venueName:'', venuePlace:'', startTime:null },
+      sessionName:'', venueName:'', venuePlace:'', startTime:null, staffName:'' },
     participants: ps,
     songs: songs,
     standards: DEFAULT_STANDARDS.slice(),
@@ -411,7 +419,7 @@ function load(){
     });
     s.config = Object.assign({ songApproval:'manual', joinApproval:'manual', autoTiming:1,
       required: DEFAULT_REQUIRED.slice(), gkEither:false, endTime:null,
-      sessionName:'', venueName:'', venuePlace:'', startTime:null }, s.config);
+      sessionName:'', venueName:'', venuePlace:'', startTime:null, staffName:'' }, s.config);
     return s;
   } }catch(e){}
   const s = seed(); localStorage.setItem(KEY, JSON.stringify(s)); return s;
@@ -886,6 +894,7 @@ function renderHost(){
           <input type="text" placeholder="${t('venueName')}" value="${esc(c.venueName||'')}" onchange="cfg('venueName',this.value)" style="flex:1;min-width:110px">
           <input type="text" placeholder="${t('venuePlace')}" value="${esc(c.venuePlace||'')}" onchange="cfg('venuePlace',this.value)" style="flex:1;min-width:110px">
           <input type="time" title="${t('startTime')}" value="${c.startTime||''}" onchange="cfg('startTime',this.value||null)">
+          <input type="text" placeholder="🎩 ${t('staffName')}" value="${esc(c.staffName||'')}" onchange="cfg('staffName',this.value)" style="flex:1;min-width:150px">
         </div>
       </div>
       <div class="field"><label>${t('presets')}</label>
@@ -1031,6 +1040,7 @@ function songCardHost(s, isCurrent){
       <button class="mini" onclick="callFor('${s.id}')">${t('callFor')}</button></div>` +
     miss.map(p=>`<div class="slot"><span class="pn">${badgePart(p)}</span>
       <select id="asg-${s.id}-${p}">${state.participants.map(pp=>`<option value="${pp.id}">${esc(pp.name)} (${pp.parts.map(pt=>pLabel(pp,pt)).join('/')})</option>`).join('')}</select>
+      <button class="mini" onclick="invitePart('${s.id}','${p}')">🙋 ${t('invite')}</button>
       <button class="mini" onclick="assignPart('${s.id}','${p}')">${t('assign')}</button></div>`).join('') : '';
   return `<div class="song ${isCurrent?'current':''}">
     <div class="ttl">${isCurrent?'▶ ':''}${esc(s.title)} ${s.confirmed?`<span class="badge b-ok">${t('confirmed')}</span> <button class="mini ghost" onclick="unconfirmSong('${s.id}')">${t('unconfirm')}</button>`:''}</div>
@@ -1317,6 +1327,14 @@ function callFor(sid){
   notify('all','nCall',{song:s.title, partKeys:miss});
   save(); flash('📢');
 }
+function invitePart(sid, part){
+  // 運営からの個別打診＝「この曲やりませんか？」のお誘い通知（決定と違い本人の自由。公平の鉄則を壊さない）
+  const s=state.songs.find(x=>x.id===sid); const sel=document.getElementById('asg-'+sid+'-'+part);
+  if(!s||!sel||!sel.value) return;
+  const from = state.config.staffName || t('host');   // 係名は運営が自由に命名（未設定なら「運営」）
+  notify([sel.value],'nInvite',{from, song:s.title, partKey:part});
+  save(); flash('🙋');
+}
 function reqToggle(p){
   const r=state.config.required; const i=r.indexOf(p);
   if(i>=0) r.splice(i,1); else r.push(p);
@@ -1464,6 +1482,97 @@ window.addEventListener('storage', (e)=>{ if(e.key===KEY){ try{ state=JSON.parse
 render();
 syncInit(); // 接続設定があればSupabase同期を開始（無ければ何もしない）
 if(role()==='watch'||role()==='stand') keepAwake(); // モニター/譜面台表示中は画面が勝手に消えないように
+
+/* ---------- 7. 使い方 案内係AI（Gemini・Supabase Edge Function経由・βとweb/共通の頭脳） ---------- */
+(function helpAssistant(){
+  if(role()==='watch' || role()==='stand') return; // 大画面モニター/譜面台には出さない
+  const ENDPOINT = localStorage.getItem('jam_help_endpoint')
+    || 'https://zrkpgkdasbrargmxravc.supabase.co/functions/v1/help-assistant';
+  const UI = {
+    ja:{btn:'使い方',title:'使い方 案内係',ph:'例：どうやって参加するの？',send:'送信',
+        hi:'こんにちは！このアプリの使い方、なんでも聞いてね🎸',err:'うまく繋がらなかった。もう一度試してね'},
+    en:{btn:'Help',title:'How-to Guide',ph:'e.g. How do I join?',send:'Send',
+        hi:'Hi! Ask me anything about how to use this app 🎸',err:'Connection failed. Please try again'},
+    ko:{btn:'사용법',title:'사용법 안내',ph:'예: 어떻게 참가하나요?',send:'보내기',
+        hi:'안녕하세요! 앱 사용법 뭐든 물어보세요 🎸',err:'연결에 실패했어요. 다시 시도해 주세요'},
+    zh:{btn:'帮助',title:'使用向导',ph:'例如：如何参加？',send:'发送',
+        hi:'你好！关于用法尽管问我 🎸',err:'连接失败，请重试'},
+  };
+  const u = ()=> UI[lang()] || UI.ja;
+  const messages = []; // {role:'user'|'assistant', content}
+  let open=false, busy=false;
+
+  const st = document.createElement('style');
+  st.textContent = `
+    #ha-fab{position:fixed;right:16px;bottom:16px;z-index:9998;border-radius:999px;
+      background:var(--accent);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,.22);
+      font-weight:700;font-size:14px;padding:12px 16px;display:flex;gap:7px;align-items:center;}
+    #ha-fab:hover{filter:brightness(1.06);}
+    #ha-panel{position:fixed;right:16px;bottom:74px;z-index:9999;width:min(360px,calc(100vw - 32px));
+      height:min(520px,calc(100vh - 120px));background:var(--card);border:1px solid var(--line);
+      border-radius:var(--radius);box-shadow:0 12px 40px rgba(0,0,0,.28);display:none;flex-direction:column;overflow:hidden;}
+    #ha-panel.on{display:flex;}
+    #ha-head{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;}
+    #ha-head .x{margin-left:auto;background:transparent;border:none;color:var(--ink2);font-size:18px;cursor:pointer;padding:2px 6px;}
+    #ha-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:9px;}
+    .ha-msg{max-width:85%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+    .ha-a{background:var(--soft);color:var(--ink);align-self:flex-start;border-bottom-left-radius:4px;}
+    .ha-u{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:4px;}
+    .ha-typing{color:var(--ink3);font-size:12px;align-self:flex-start;}
+    #ha-foot{border-top:1px solid var(--line);padding:9px;display:flex;gap:7px;}
+    #ha-in{flex:1;border:1px solid var(--line2);border-radius:var(--radius-s);padding:9px 10px;font-size:13px;background:var(--bg);color:var(--ink);}
+    #ha-send{background:var(--accent);color:#fff;border:none;border-radius:var(--radius-s);padding:0 14px;font-weight:700;}
+    #ha-send:disabled{opacity:.5;}
+  `;
+  document.head.appendChild(st);
+
+  const fab = document.createElement('button');
+  fab.id='ha-fab'; fab.innerHTML = '❓ <span id="ha-fab-t"></span>';
+  const panel = document.createElement('div');
+  panel.id='ha-panel';
+  panel.innerHTML = `
+    <div id="ha-head"><span>💬</span><span id="ha-title"></span><button class="x" id="ha-x">✕</button></div>
+    <div id="ha-body"></div>
+    <div id="ha-foot"><input id="ha-in" type="text"><button id="ha-send"></button></div>`;
+  document.body.appendChild(fab); document.body.appendChild(panel);
+
+  const $ = id => document.getElementById(id);
+  const body=$('ha-body');
+  function syncLabels(){
+    $('ha-fab-t').textContent=u().btn; $('ha-title').textContent=u().title;
+    $('ha-in').placeholder=u().ph; $('ha-send').textContent=u().send;
+  }
+  function bubble(cls, text){
+    const d=document.createElement('div'); d.className='ha-msg '+cls; d.textContent=text;
+    body.appendChild(d); body.scrollTop=body.scrollHeight; return d;
+  }
+  function openPanel(){
+    open=true; panel.classList.add('on'); syncLabels();
+    if(!body.childElementCount) bubble('ha-a', u().hi);
+    $('ha-in').focus();
+  }
+  function closePanel(){ open=false; panel.classList.remove('on'); }
+  async function ask(){
+    if(busy) return;
+    const inp=$('ha-in'); const q=inp.value.trim(); if(!q) return;
+    inp.value=''; messages.push({role:'user',content:q}); bubble('ha-u', q);
+    busy=true; $('ha-send').disabled=true;
+    const typing=document.createElement('div'); typing.className='ha-typing'; typing.textContent='…'; body.appendChild(typing); body.scrollTop=body.scrollHeight;
+    try{
+      const r=await fetch(ENDPOINT,{method:'POST',headers:{'content-type':'application/json'},
+        body:JSON.stringify({messages, lang:lang()})});
+      const data=await r.json(); typing.remove();
+      const reply=data.reply || data.error || u().err;
+      messages.push({role:'assistant',content:reply}); bubble('ha-a', reply);
+    }catch(e){ typing.remove(); bubble('ha-a', u().err); }
+    busy=false; $('ha-send').disabled=false; $('ha-in').focus();
+  }
+  fab.addEventListener('click', ()=> open?closePanel():openPanel());
+  $('ha-x').addEventListener('click', closePanel);
+  $('ha-send').addEventListener('click', ask);
+  $('ha-in').addEventListener('keydown', e=>{ if(e.key==='Enter') ask(); });
+  syncLabels();
+})();
 </script>
 </body>
 </html>
